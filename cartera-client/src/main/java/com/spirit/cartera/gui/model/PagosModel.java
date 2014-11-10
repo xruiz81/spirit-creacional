@@ -221,7 +221,7 @@ public class PagosModel extends JPPagos {
 		getTblPagos().setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 		getTblPagos().addMouseListener(oMouseAdapterTblPagos);
 		getTblPagos().addKeyListener(oKeyAdapterTblPagos);
-		//getTblPagos().setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+		getTblPagos().setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
 		TableColumn anchoColumna = getTblPagos().getColumnModel().getColumn(0);
 		anchoColumna.setPreferredWidth(45);
 		anchoColumna = getTblPagos().getColumnModel().getColumn(1);
