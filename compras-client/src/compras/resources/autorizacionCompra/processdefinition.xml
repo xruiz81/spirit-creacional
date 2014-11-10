@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<process-definition
+  xmlns="urn:jbpm.org:jpdl-3.1"  name="autorizacionSolicitudCompra">
+   <start-state name="Inicio">
+      <transition name="" to="Autorizar Orden Compra"></transition>
+   </start-state>
+   <state name="Autorizar Orden Compra">
+      <transition name="Aprovada" to="Generar Orden Compra">
+         <action name="Aprovada" class="com.compras.handlers.AutorizacionCompraHandler"></action>
+      </transition>
+      <transition name="Desaprovada" to="Fin">
+         <action name="Desaprovada" class="com.compras.handlers.AutorizacionCompraHandler"></action>
+      </transition>
+   </state>
+   <state name="Generar Orden Compra">
+      <transition name="" to="Fin"></transition>
+   </state>
+   <end-state name="Fin"></end-state>
+</process-definition>

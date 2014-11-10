@@ -1,0 +1,3171 @@
+package com.spirit.nomina.session;
+
+import java.math.BigDecimal;
+import java.sql.Date;
+import java.text.DecimalFormat;
+import java.text.Format;
+import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.GregorianCalendar;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.Vector;
+
+import javax.annotation.Resource;
+import javax.ejb.EJB;
+import javax.ejb.SessionContext;
+import javax.ejb.Stateless;
+import javax.ejb.TransactionAttribute;
+import javax.ejb.TransactionAttributeType;
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
+import javax.persistence.Query;
+import javax.script.ScriptEngine;
+import javax.script.ScriptEngineManager;
+import javax.script.ScriptException;
+
+import com.spirit.contabilidad.entity.AsientoDetalleIf;
+import com.spirit.contabilidad.entity.AsientoIf;
+import com.spirit.contabilidad.entity.ChequeEmitidoIf;
+import com.spirit.contabilidad.handler.ChequeDatos;
+import com.spirit.contabilidad.session.AsientoDetalleSessionLocal;
+import com.spirit.contabilidad.session.AsientoSessionLocal;
+import com.spirit.contabilidad.session.ChequeEmitidoSessionLocal;
+import com.spirit.contabilidad.session.CuentaEntidadSessionLocal;
+import com.spirit.exception.GenericBusinessException;
+import com.spirit.general.entity.CuentaBancariaIf;
+import com.spirit.general.entity.EmpleadoIf;
+import com.spirit.general.entity.TipoPagoIf;
+import com.spirit.general.session.CuentaBancariaSessionLocal;
+import com.spirit.general.session.DocumentoSessionLocal;
+import com.spirit.general.session.TipoDocumentoSessionLocal;
+import com.spirit.general.session.TipoPagoSessionLocal;
+import com.spirit.general.session.UtilitariosSessionLocal;
+import com.spirit.nomina.entity.ContratoIf;
+import com.spirit.nomina.entity.ContratoRubroIf;
+import com.spirit.nomina.entity.RolPagoDetalleData;
+import com.spirit.nomina.entity.RolPagoDetalleEJB;
+import com.spirit.nomina.entity.RolPagoDetalleIf;
+import com.spirit.nomina.entity.RolPagoEJB;
+import com.spirit.nomina.entity.RolPagoIf;
+import com.spirit.nomina.entity.RubroEventualIf;
+import com.spirit.nomina.entity.RubroIf;
+import com.spirit.nomina.entity.TipoContratoIf;
+import com.spirit.nomina.entity.TipoRolIf;
+import com.spirit.nomina.handler.DatoAsientoMensual;
+import com.spirit.nomina.handler.DatoAsientoPagoRol;
+import com.spirit.nomina.handler.DatoAsientoRubroEventual;
+import com.spirit.nomina.handler.DatoRubroEventual;
+import com.spirit.nomina.handler.EstadoRolPago;
+import com.spirit.nomina.handler.EstadoRolPagoDetalle;
+import com.spirit.nomina.handler.EstadoRubroEventual;
+import com.spirit.nomina.handler.OperacionNomina;
+import com.spirit.nomina.handler.PoliticaRubro;
+import com.spirit.nomina.handler.RolPagoAsientoAutomaticoHandlerLocal;
+import com.spirit.nomina.handler.TipoRol;
+import com.spirit.nomina.handler.UtilesLocal;
+import com.spirit.nomina.session.generated._RolPagoSession;
+import com.spirit.server.LogService;
+import com.spirit.server.Logger;
+import com.spirit.server.QueryBuilder;
+
+/**
+ * The <code>RolPagoSession</code> session bean, which acts as a facade to the
+ * underlying entity beans.
+ *
+ * @author  lmunoz@versality.biz
+ * @version $Revision: 1.144 $, $Date: 2009/08/31 16:46:53 $
+ *
+ */
+@Stateless
+public class RolPagoSessionEJB extends _RolPagoSession implements RolPagoSessionRemote  {
+
+	@PersistenceContext(unitName = "spirit")
+	private EntityManager manager;
+
+	@Resource 
+	private SessionContext ctx;
+
+	@EJB
+	RolPagoDetalleSessionLocal rolPagoDetalleLocal;
+
+	@EJB
+	TipoRolSessionLocal tipoRolLocal;
+
+	@EJB
+	ContratoSessionLocal contratoLocal;
+
+	@EJB
+	ContratoRubroSessionLocal contratoRubroLocal;
+
+	@EJB
+	RubroSessionLocal rubroLocal;
+
+	@EJB
+	RubroEventualSessionLocal rubroEventualLocal;
+
+	@EJB
+	RolPagoAsientoAutomaticoHandlerLocal rolPagoAsientoAutomaticoHandlerLocal; 
+	
+	@EJB
+	TipoPagoSessionLocal tipoPagoLocal;
+	
+	@EJB
+	AsientoSessionLocal asientoLocal;
+	
+	@EJB
+	AsientoDetalleSessionLocal asientoDetalleLocal;
+	
+	@EJB
+	DocumentoSessionLocal documentoLocal;
+	
+	@EJB
+	TipoDocumentoSessionLocal tipoDocumentoLocal;
+
+	@EJB
+	ChequeEmitidoSessionLocal chequeEmitidoLocal;
+	
+	@EJB
+	CuentaEntidadSessionLocal cuentaEntidadLocal;
+	
+	@EJB
+	CuentaBancariaSessionLocal cuentaBancariaLocal;
+	
+	@EJB
+	UtilitariosSessionLocal utilitariosLocal;
+
+	@EJB
+	UtilesLocal utilesLocal;
+
+	/**
+	 * The logger object.
+	 */
+	private static Logger log = LogService.getLogger(RolPagoSessionEJB.class);
+
+	/*******************************************************************************************************************
+	 *                                  B U S I N E S S   M E T H O D S
+	 *******************************************************************************************************************/
+
+	@TransactionAttribute(TransactionAttributeType.REQUIRED)
+	public void procesarRolPago(RolPagoIf rolPago,TipoContratoIf tipoContratoIf,ContratoIf contratoIf) throws GenericBusinessException{
+		try {
+			boolean tieneDetalle = false;
+
+			GregorianCalendar gc = new GregorianCalendar();
+			gc.set(GregorianCalendar.MONTH, Integer.valueOf(rolPago.getMes())-1 );
+			gc.set(GregorianCalendar.YEAR, Integer.valueOf(rolPago.getAnio()) );
+			Integer mesRolPago = gc.get(GregorianCalendar.MONTH);
+			Integer anioRolPago = gc.get(GregorianCalendar.YEAR);
+			Integer diaFinMesRolPago = utilitariosLocal.getFechaFinMes(mesRolPago,anioRolPago).getDate();
+			gc.set(GregorianCalendar.DAY_OF_MONTH, diaFinMesRolPago);
+
+			Date fechaRolPago = new Date(gc.getTime().getTime());
+			
+			GregorianCalendar gce = new GregorianCalendar();
+			gce.set(GregorianCalendar.MONTH, Integer.valueOf(rolPago.getMes())-1 );
+			gce.set(GregorianCalendar.YEAR, Integer.valueOf(rolPago.getAnio()) );
+			gce.set(GregorianCalendar.DAY_OF_MONTH, 1);
+			Date fechaEventual = new Date(gce.getTime().getTime());
+
+			//if ( rolPagoIf.getId() != null )
+			//	eliminarRolPago(rolPagoIf);
+
+
+			//Map<Long,TipoRolIf> mapaTipoRol = new HashMap<Long, TipoRolIf>();
+			Collection<TipoRolIf> tiposRolPago = tipoRolLocal.getTipoRolList();
+			//TipoRolIf tipoRolIf = tipoRolLocal.getTipoRol(rolPagoIf.getTiporolId());
+			TipoRolIf tipoRolIf = null;
+			for ( TipoRolIf tipoRolI : tiposRolPago ){
+				if ( tipoRolI.getId().longValue() == rolPago.getTiporolId().longValue() ){
+					tipoRolIf =  tipoRolI;
+					//break;
+				}
+				//verificarTipoRolIf(mapaTipoRol, rolPago.getTiporolId());
+			}
+			if ( tipoRolIf == null )
+				throw new GenericBusinessException("No existe Tipo de Rol seleccionado !!");
+
+			TipoRol tipoRol = null;
+			TipoRolIf tipoRolQuincenal = null;	//Se lo obtiene cuando sea tipo de rol Mensual
+			TipoRolIf tipoRolMensual = null;	//Se lo obtiene cuando sea de tipo Decimo
+			RubroIf rubroQuincenal = null;
+			RubroIf rubroDecimoTercero = null;
+			RubroIf rubroDecimoCuarto = null;
+			RubroIf rubroAportePatronal = null;
+			RubroIf rubroFondoReserva = null;
+			RubroIf rubroVacaciones = null;
+
+			tipoRol = TipoRol.obtenerTipoRol(tipoRolIf);
+			if ( tipoRol == null ){
+				throw new GenericBusinessException("Manejo de Tipo de Rol no implementado !!");
+			} else if ( tipoRol == TipoRol.MENSUAL ){
+				tipoRolQuincenal = buscarTipoRolIf(tiposRolPago, "QUINCENA");
+				rubroQuincenal = utilesLocal.getRubroByTipoRol(TipoRol.QUINCENAL);
+				rubroDecimoTercero = utilesLocal.getRubroByTipoRol(TipoRol.DECIMO_TERCERO);
+				rubroDecimoCuarto = utilesLocal.getRubroByTipoRol(TipoRol.DECIMO_CUARTO);
+				rubroFondoReserva = utilesLocal.getRubroByTipoRol(TipoRol.FONDO_RESERVA);
+				rubroAportePatronal = utilesLocal.getRubroByTipoRol(TipoRol.APORTE_PATRONAL);
+				rubroVacaciones = utilesLocal.getRubroByTipoRol(TipoRol.VACACIONES);
+			} else if ( tipoRol == TipoRol.DECIMO_TERCERO ){
+				tipoRolMensual = buscarTipoRolIf(tiposRolPago, "MENSUAL");
+				rubroDecimoTercero = utilesLocal.getRubroByTipoRol(tipoRol);
+				if (rubroDecimoTercero == null)
+					throw new GenericBusinessException("No existe Rubro con nombre DECIMO TERCERO");
+			} else if ( tipoRol == TipoRol.VACACIONES ){
+				tipoRolMensual = buscarTipoRolIf(tiposRolPago, "MENSUAL");
+				rubroVacaciones = utilesLocal.getRubroByTipoRol(tipoRol);
+				if (rubroVacaciones == null)
+					throw new GenericBusinessException("No existe Rubro con nombre VACACIONES");
+			} else if ( tipoRol == TipoRol.DECIMO_CUARTO ){
+				tipoRolMensual = buscarTipoRolIf(tiposRolPago, "MENSUAL");
+				rubroDecimoCuarto = utilesLocal.getRubroByTipoRol(tipoRol);
+				if (rubroDecimoCuarto == null)
+					throw new GenericBusinessException("No existe Rubro con nombre DECIMO CUARTO");
+			} else if ( tipoRol == TipoRol.FONDO_RESERVA ){
+				tipoRolMensual = buscarTipoRolIf(tiposRolPago, "MENSUAL");
+				rubroFondoReserva = utilesLocal.getRubroByTipoRol(tipoRol);
+				if (rubroFondoReserva == null)
+					throw new GenericBusinessException("No existe Rubro con nombre FONDO DE RESERVA");
+			} else if ( tipoRol == TipoRol.APORTE_PATRONAL ){
+				tipoRolMensual = buscarTipoRolIf(tiposRolPago, "MENSUAL");
+				rubroAportePatronal = utilesLocal.getRubroByTipoRol(tipoRol);
+				if (rubroAportePatronal == null)
+					throw new GenericBusinessException("No existe Rubro con nombre APORTE PATRONAL");
+			}
+
+			Map<Long,RubroIf> mapaRubros = new HashMap<Long, RubroIf>();
+
+			//CREAR CABECERA
+			Date fechaHoy = utilitariosLocal.getServerDateSql();
+			Map<String, Object> mapaRolPago =  new HashMap<String, Object>();
+			mapaRolPago.put("mes", rolPago.getMes());
+			mapaRolPago.put("anio", rolPago.getAnio());
+			mapaRolPago.put("tiporolId", rolPago.getTiporolId());
+			mapaRolPago.put("tipocontratoId", rolPago.getTipocontratoId());
+			
+			Collection<RolPagoIf> rolesPago = findRolPagoByQuery(mapaRolPago);
+			Set<Long> contratoIdGenerados = new HashSet<Long>();
+			RolPagoIf rolPagoIf = null;
+			if ( rolesPago.size() == 0  && rolPago.getId() == null) {
+				rolPago.setFecha(fechaHoy);
+				rolPago.setEstado("G");//GENERADO
+				rolPagoIf = addRolPago(rolPago);
+			} else {
+				if ( rolPago.getId()==null ){
+					if ( rolesPago.size() > 1 )
+						throw new GenericBusinessException("Error, existe mas de un Rol de pago igual !!");
+					rolPagoIf = rolesPago.iterator().next();
+				} else 
+					rolPagoIf = rolPago;
+				
+				//busco los detalles que esten pagados, para coger el contratoId y no tomarlo
+				//en cuenta ese contrato al momento de generar el rol
+				Map<String, Object> mapaDetallePagados = new HashMap<String, Object>();
+				mapaDetallePagados.put("rolpagoId",rolPagoIf.getId() );
+				if ( contratoIf != null )
+					mapaDetallePagados.put("contratoId",contratoIf.getId() );
+				mapaDetallePagados.put("rubroId","not null" );
+				Collection<RolPagoDetalleIf> rolesDetallesAutorizadosPagados = rolPagoDetalleLocal.findRolPagoDetalleByQueryByEstados(
+						mapaDetallePagados,EstadoRolPagoDetalle.AUTORIZADO.getLetra()
+						,EstadoRolPagoDetalle.PAGADO.getLetra());
+				if ( rolesDetallesAutorizadosPagados.size()>0 ){
+					
+					//throw new GenericBusinessException("No se puede generar Rol Pago, ya ha sido autorizado o pagado " +
+					//		(contratoIf == null?" mínimo 1 contrato":("el contrato con codigo "+contratoIf.getCodigo()) )+" !!");
+					for ( RolPagoDetalleIf rpdt : rolesDetallesAutorizadosPagados )
+						contratoIdGenerados.add( rpdt.getContratoId() );
+					
+				}
+				
+				//Se borra todos los detalles que estan en emitido, porque se lo va a volver a generar.
+				//hay que volverlo a poner, porque cuando se usa null al atributo es saco del mapa.
+				mapaDetallePagados.put("rubroId","not null" );
+				Collection<RolPagoDetalleIf> rolesDetallesEmitidos = rolPagoDetalleLocal.findRolPagoDetalleByQueryByEstados(
+						mapaDetallePagados,EstadoRolPagoDetalle.EMITIDO.getLetra()
+						, EstadoRolPagoDetalle.PROVISIONADO.getLetra() );
+				for ( RolPagoDetalleIf r : rolesDetallesEmitidos ){
+					rolPagoDetalleLocal.deleteRolPagoDetalle(r.getId());
+				}
+				
+				
+				//Elimino los Rubros Eventuales Emitidos
+				//Y cambio el estado de Autorizado a Emitido en RubroEventual
+				//Porque despues en el proceso de generar el rol
+				//Se lo vuelve e agreagar
+				Map<String, Object> mdee = new HashMap<String, Object>();
+				mdee.put("rolpagoId",rolPagoIf.getId() );
+				if ( contratoIf != null )
+					mdee.put("contratoId",contratoIf.getId() );
+				mdee.put("rubroEventualId","not null" );
+				Collection<RolPagoDetalleIf> rolesDetallesEventualesEmitidos = rolPagoDetalleLocal.findRolPagoDetalleByQueryByEstados(
+						mdee,EstadoRolPagoDetalle.EMITIDO.getLetra());
+				for ( RolPagoDetalleIf r : rolesDetallesEventualesEmitidos ){
+					RubroEventualIf rubroEventual = rubroEventualLocal.getRubroEventual(r.getRubroEventualId());
+					rubroEventual.setEstado(EstadoRubroEventual.EMITIDO.getLetra());
+					rolPagoDetalleLocal.deleteRolPagoDetalle(r.getId());
+				}
+			}
+			//rolPagoIf = addRolPago(rolPagoIf);
+
+
+			if ( tipoRol==TipoRol.QUINCENAL || tipoRol==TipoRol.MENSUAL ){
+				//CREAR DETALLE
+				Collection<RolPagoDetalleIf> rolPagoDetalleCollection = new ArrayList<RolPagoDetalleIf>();
+				
+				Collection<ContratoIf> contratos = null;
+				
+				if ( contratoIf == null )
+					contratos = contratoLocal.findContratoByFechaRolPagoByTipoContratoIdByEstado(fechaRolPago,tipoContratoIf.getId(), "A");
+				else {
+					//Map<String, Object> mapaContrato = new HashMap<String, Object>();
+					//mapaContrato.put("contratoId", contratoIf.getId());
+					//mapaContrato.put("tipocontratoId", contratoIf.getTipocontratoId());
+					contratos = contratoLocal.findContratoById(contratoIf.getId());
+					//contratos = contratoLocal.findContratoByQuery(mapaContrato);
+				}
+				
+				if ( contratos.size() == 0  )
+					throw new GenericBusinessException("No existen contratos creados que inicien antes de "+utilitariosLocal.getFechaUppercase(fechaHoy));
+				
+				Format formatoDosEnteros = new DecimalFormat("00");
+				
+				for ( ContratoIf contratoTmp : contratos ){
+					
+					if ( contratos.size() == 1 && contratoIdGenerados.contains(contratoTmp.getId()) ){
+						throw new GenericBusinessException("Contrato para generar Rol ya está autorizado o pagado !!");
+					}
+					
+					if ( !contratoIdGenerados.contains(contratoTmp.getId()) ){
+
+						Map<String, Object> mapaBusquedaDetalle = new HashMap<String, Object>();
+						mapaBusquedaDetalle.put("rolpagoId", rolPagoIf.getId());
+						mapaBusquedaDetalle.put("contratoId", contratoTmp.getId());
+	
+						//RUBROS POR CONTRATO
+						//POR CONTRATOID Y TIPO DE ROL
+						//Collection<ContratoRubroIf> contratosRubro = contratoRubroLocal.findContratoRubroByContratoIdByTipoRolId(contrato.getId(), rolPagoIf.getTiporolId());
+	
+						//POR CONTRATOID Y POR TIPO DE ROL. Si el tipo de rol es Quincenal, busca por frecencia Q, si es mensual busca por frecuencia M
+						Collection<ContratoRubroIf> contratosRubro = contratoRubroLocal.findContratoRubroByContratoIdByFrecuenciaSinProvisiones(contratoTmp.getId(),tipoRolIf);
+						//MAPA<CODIGO_RUBRO,VALOR_EN_CONTRATO_RUBRO> , VALOR_EN_CONTRATO_RUBRO, PUEDE SER: VALOR O CALCULADO
+						Map<String, BigDecimal> codigoValorxRubro = contratoRubroLocal.findMapaContratoRubroByRubroResgistrado(contratoTmp.getId());
+	
+						Double totalIngresos = 0.0;
+						
+						//Para calculo de Total de Ingresos
+						Iterator<ContratoRubroIf> itRubroContrato = contratosRubro.iterator();
+						while ( itRubroContrato.hasNext() ){
+							String observacion = null;
+							ContratoRubroIf cr = itRubroContrato.next();
+							RubroIf rubroIf = verificarRubro(mapaRubros, cr.getRubroId());
+							BigDecimal valor = calcularValor(cr, codigoValorxRubro, rubroIf);
+							if ( rubroIf.getTipoRubro().equals("S") || //Se calcula el SUELDO desde el dia que ingreso para Mes
+									( "Q".equals(rubroIf.getTipoRubro()) 
+											&& rubroIf.getNombre().contains("ANTICIPO") && rubroIf.getNombre().contains("QUINCENA")
+									)
+							)
+							{
+								//(rubroIf.getNombre().contains("ANTICIPO") && rubroIf.getNombre().contains("QUINCENA") ) ){ // para Quincena
+								BigDecimal valorMes = calcularValorDelMes(tipoRol, fechaRolPago, contratoTmp, utilitariosLocal.redondeoValor(valor).doubleValue(),null,null);
+								if ( valorMes.compareTo(valor) != 0 ){
+									Date fechaInicioContrato = contratoIf.getFechaInicio();
+									Date fechaFinContrato = contratoIf.getFechaFin();
+									
+									valor = valorMes;
+									
+									if ( esFechaInicioContrato(fechaInicioContrato,fechaRolPago) )
+										observacion = "CALCULADO DESDE EL "+utilitariosLocal.getFechaUppercase(contratoTmp.getFechaInicio());
+									
+									//if ( rubroIf.getTipoRubro().equals("S")  )
+									if ( esFechaFinContrato(fechaFinContrato,fechaRolPago) )
+										observacion += (" HASTA EL "+utilitariosLocal.getFechaUppercase(contratoTmp.getFechaFin()) );
+									
+								}
+	
+								RolPagoDetalleIf rolPagoDetalleIf = registrarRolPagoDetalle(rolPagoIf, contratoTmp, cr,valor,observacion);
+								RolPagoDetalleIf rolPagoDetalleGuardado = rolPagoDetalleLocal.addRolPagoDetalle(rolPagoDetalleIf);
+								rolPagoDetalleCollection.add(rolPagoDetalleGuardado);
+								codigoValorxRubro.put(rubroIf.getCodigo(), valor);
+	
+								tieneDetalle = true;
+								
+								if ( rubroIf.getTipoRubro().equals("S") ){
+									if ( valor == null  )
+										throw new GenericBusinessException("Error general para cálculo de Ingreso Total !!");
+									totalIngresos += utilitariosLocal.redondeoValor(valor).doubleValue();
+									
+								} else if ( rubroIf.getTipoRubro().equals("B") ){
+									totalIngresos += utilitariosLocal.redondeoValor(rolPagoDetalleGuardado.getValor()).doubleValue();
+									
+								}
+								
+								itRubroContrato.remove();
+							}
+							
+						}
+						
+						Map<Long, RolPagoDetalleIf> mapaEventualesQuincenal = new HashMap<Long, RolPagoDetalleIf>();
+						for ( ContratoRubroIf contratoRubro : contratosRubro ){
+							RubroIf rubroIf = verificarRubro(mapaRubros, contratoRubro.getRubroId());
+							boolean existeRubroRolDetalle = existeRubroEnRolPagoDetalle(mapaBusquedaDetalle, rubroIf.getId()); 
+							BigDecimal valor = null;
+							if ( !existeRubroRolDetalle ){
+								valor = calcularValor(contratoRubro, codigoValorxRubro, rubroIf);
+								//RolPagoDetalleIf rolPagoDetalleIf = registrarRolPagoDetalle(rolPagoIf, contratoTmp, contratoRubro,valor,observacion);
+								RolPagoDetalleIf rolPagoDetalleIf = registrarRolPagoDetalle(rolPagoIf, contratoTmp, contratoRubro,valor,null);
+								RolPagoDetalleIf rolPagoDetalleGuardado = rolPagoDetalleLocal.addRolPagoDetalle(rolPagoDetalleIf);
+								rolPagoDetalleCollection.add(rolPagoDetalleGuardado);
+								tieneDetalle = true;
+								
+							}
+						}
+	
+						if ( tipoRol==TipoRol.MENSUAL ){
+							//SI ES MENSUAL, SE PONE LOS INGRESOS QUINCENALES COMO EGRESOS, SIN NADA QUE LOS SEÑALE
+							if  (tipoRolQuincenal == null)
+								throw new GenericBusinessException("No existe Tipo de Rol Quincenal para cálculo de Egresos Quincenales");
+							registrarEgresosQuincenales(rolPagoIf,rubroQuincenal, tipoRolQuincenal
+									,rolPagoDetalleCollection, contratoTmp,mapaRubros,mapaEventualesQuincenal);
+	
+							//MENSUALMENTE SE PROVISIONAN LOS VALORES DE LOS DECIMOS TERCEROS
+							if ( rubroDecimoTercero == null )
+								throw new GenericBusinessException("Rubro Décimo Tercero no existe para cálculo de provisiones");
+							registrarDecimosAportesFondos(rolPagoIf, fechaRolPago, contratoTmp, totalIngresos,rubroDecimoTercero
+									,TipoRol.DECIMO_TERCERO,codigoValorxRubro);
+							
+							//MENSUALMENTE SE PROVISIONAN LOS VALORES DE LAS VACACIONES
+							if ( rubroVacaciones != null ){
+								//throw new GenericBusinessException("Rubro Vacaciones no existe para cálculo de provisiones");
+								registrarVacaciones(rolPagoIf, fechaRolPago, contratoTmp, totalIngresos,rubroVacaciones
+									,TipoRol.VACACIONES,codigoValorxRubro);
+							}
+	
+							//MENSUALMENTE SE PROVISIONAN LOS VALORES DE LOS DECIMOS CUARTOS
+							if ( rubroDecimoCuarto == null )
+								throw new GenericBusinessException("Rubro Décimo Cuarto no existe para cálculo de provisiones");
+							registrarDecimosAportesFondos(rolPagoIf, fechaRolPago, contratoTmp, totalIngresos,rubroDecimoCuarto
+									,TipoRol.DECIMO_CUARTO,codigoValorxRubro);
+	
+							//MENSUALMENTE SE PROVISIONAN LOS VALORES DE LOS APORTES IESS PATRONALES
+							if ( rubroAportePatronal != null ){
+								//throw new GenericBusinessException("Rubro Aporte Patronal no existe para cálculo de provisiones");
+								registrarDecimosAportesFondos(rolPagoIf, fechaRolPago, contratoTmp, totalIngresos,rubroAportePatronal
+									,TipoRol.APORTE_PATRONAL,codigoValorxRubro);
+							}
+	
+							//MENSUALMENTE SE PROVISIONAN LOS VALORES DE LOS FONDO RESERVA
+							if ( rubroFondoReserva != null ){
+								//throw new GenericBusinessException("Rubro Fondo de Reserva no existe para cálculo de provisiones");
+								registrarDecimosAportesFondos(rolPagoIf, fechaRolPago, contratoTmp, totalIngresos,rubroFondoReserva
+									,TipoRol.FONDO_RESERVA,codigoValorxRubro);
+							}
+						}
+	
+						//RUBROS EVENTUALES POR CONTRATO
+						Collection<RubroEventualIf> rubrosEventuales = 
+							rubroEventualLocal
+								.findRubroEventualesByTipoRolCobroIdByContratoByMesByAnioByEstado(
+									rolPagoIf.getTiporolId(), contratoTmp.getId()
+									, rolPago.getMes()
+									, anioRolPago.toString()
+									, EstadoRubroEventual.EMITIDO.getLetra()
+									, EstadoRubroEventual.AUTORIZADO.getLetra()
+									, EstadoRubroEventual.PAGADO.getLetra() );
+							//.findRubroEventualByContratoIdByTipoRolIdByFechaRolPago(contratoTmp.getId(), rolPagoIf.getTiporolId(), fechaEventual);
+	
+						//Se registran los mensuales y si hay algun quincenal del mismo rubro, tambien.
+						//Los quincenales se registran para que sean tomados como descuentos.
+						for ( RubroEventualIf rubroEventual : rubrosEventuales ){
+							double total = rubroEventual.getValor().doubleValue();
+							
+							Collection<RolPagoDetalleIf> roleDetalleExistente = rolPagoDetalleLocal
+								.findRolPagoDetalleByRubroEventualId(rubroEventual.getId());
+							if ( roleDetalleExistente.size() == 0 ){
+								RolPagoDetalleIf rolPagoDetalleIf = registrarRubroEventual(rolPagoIf, contratoTmp.getId()
+									, rubroEventual,rubroEventual.getValor() //new BigDecimal(total)
+									, EstadoRolPagoDetalle.EMITIDO.getLetra() );
+								RolPagoDetalleIf rolPagoDetalleGuardado = rolPagoDetalleLocal.addRolPagoDetalle(rolPagoDetalleIf);
+								rolPagoDetalleCollection.add(rolPagoDetalleGuardado);
+							} else {
+								//talvez no se necesita, analizar
+								RolPagoDetalleIf rolPagoDetalleIf = roleDetalleExistente.iterator().next();
+								rolPagoDetalleCollection.add(rolPagoDetalleIf);
+							}
+						}
+						//talvez no se necesita, analizar
+						for ( Long rolDetalleQuincenalId : mapaEventualesQuincenal.keySet() ){
+							RolPagoDetalleIf rolPagoDetalleIf = mapaEventualesQuincenal.get(rolDetalleQuincenalId);
+							rolPagoDetalleCollection.add(rolPagoDetalleIf);
+						}
+					}
+				}
+			} else if ( tipoRol == TipoRol.FONDO_RESERVA || tipoRol == TipoRol.APORTE_PATRONAL ){
+				Map<String, Object> mapa = new HashMap<String, Object>();
+				mapa.put("mes", rolPagoIf.getMes());
+				mapa.put("anio", rolPagoIf.getAnio() );
+				mapa.put("tiporolId", tipoRolMensual.getId());
+
+				Collection<RolPagoIf> rolesMensuales = findRolPagoByQuery(mapa);
+				if ( rolesMensuales.size() == 0 )
+					throw new GenericBusinessException("Rol de Pago Mensual no ha sido generado !!!");
+				RolPagoIf rolMensual = rolesMensuales.iterator().next();
+
+				String observacion = "";
+				if ( tipoRol == TipoRol.APORTE_PATRONAL )
+					observacion = "APORTE PATRONAL DE ";
+				if ( tipoRol == TipoRol.APORTE_PATRONAL )
+					observacion = "FONDO DE RESERVA DE ";
+				observacion += utilitariosLocal.getNombreMes(Integer.parseInt(rolPagoIf.getMes()))+"-"+rolPagoIf.getAnio();
+				mapa.clear();
+				mapa.put("rolpagoId", rolMensual.getId());
+				if ( tipoRol == TipoRol.APORTE_PATRONAL )
+					mapa.put("rubroId",rubroAportePatronal.getId() );
+				if ( tipoRol == TipoRol.FONDO_RESERVA )
+					mapa.put("rubroId",rubroFondoReserva.getId() );
+				
+				Collection<RolPagoDetalleIf> detalles = rolPagoDetalleLocal.findRolPagoDetalleByQuery(mapa);
+				for ( RolPagoDetalleIf detalle : detalles  ){
+					detalle.setEstado(EstadoRolPagoDetalle.PAGADO.getLetra() );
+					RolPagoDetalleIf rolDetalle = registrarRolPagoDetalleDecimosFondosAportesVacaciones(rolPagoIf, detalle.getContratoId(), detalle, null,observacion);
+					rolPagoDetalleLocal.addRolPagoDetalle(rolDetalle);
+					tieneDetalle = true;
+				}
+				
+			} else if ( tipoRol == TipoRol.DECIMO_TERCERO || tipoRol == TipoRol.DECIMO_CUARTO  ){
+				//Integer anioRolPago = gc.get(GregorianCalendar.YEAR);
+				if ( tipoRolMensual != null ){
+
+					//Se crea mapa para busqueda de detalles de decimos creados
+					Map<String, Object> mapaDetalle = new HashMap<String, Object>();
+					if ( tipoRol == TipoRol.DECIMO_TERCERO )
+						mapaDetalle.put("rubroId", rubroDecimoTercero.getId());
+					else if ( tipoRol == TipoRol.DECIMO_CUARTO )
+						mapaDetalle.put("rubroId", rubroDecimoCuarto.getId());
+
+					Date fechaInicio = tipoRolIf.getFechaInicio();
+					if ( fechaInicio == null )
+						throw new GenericBusinessException(tipoRolIf.getNombre()+" no tiene Fecha Inicio");
+
+					Date fechaFin = tipoRolIf.getFechaFin();
+					if ( fechaFin == null )
+						throw new GenericBusinessException(tipoRolIf.getNombre()+" no tiene Fecha Fin");
+						
+					Collection<String> setMesesAnios = utilesLocal.getMesesRolPago(fechaInicio,fechaFin);
+					Map<String, Object> mapaRolPagoPorFecha = new HashMap<String, Object>();
+					for( Iterator<String> itMeses = setMesesAnios.iterator() ; itMeses.hasNext() ; ){
+						String fecha = itMeses.next();
+						String mes = fecha.split("-")[0];
+						String anio = fecha.split("-")[1];
+						mapaRolPagoPorFecha.put("mes", mes);
+						mapaRolPagoPorFecha.put("anio", anio );
+						mapaRolPagoPorFecha.put("tiporolId", tipoRolMensual.getId());
+
+						Collection<RolPagoIf> roles = findRolPagoByQuery(mapaRolPagoPorFecha);
+
+						for (RolPagoIf rol :roles  ){
+							//Se establece el Rol de pago Id en el mapa de busqueda para el detalle
+							mapaDetalle.put("rolpagoId", rol.getId());
+							Collection<RolPagoDetalleIf> detalles = rolPagoDetalleLocal.findRolPagoDetalleByQuery(mapaDetalle);
+							for ( RolPagoDetalleIf detalle : detalles  ){
+								detalle.setEstado(EstadoRolPagoDetalle.PAGADO.getLetra());
+								String observacion = utilitariosLocal.getNombreMes(Integer.parseInt(mes))+"-"+anio;
+								RolPagoDetalleIf rolDetalle = registrarRolPagoDetalleDecimosFondosAportesVacaciones(rolPagoIf, detalle.getContratoId(), detalle, null,observacion);
+								rolPagoDetalleLocal.addRolPagoDetalle(rolDetalle);
+								tieneDetalle = true;
+							}
+						}
+
+					}
+
+				} 
+				else
+					throw new GenericBusinessException("No existe tipo de Rol Mensual");
+			} else if( tipoRol == TipoRol.VACACIONES ){
+				if ( contratoIf == null )
+					throw new GenericBusinessException("Generacion de Rol de Vacaciones es individual, por contrato !!");
+				Map<String, Object> mapaDetalle = new HashMap<String, Object>();
+				mapaDetalle.put("rubroId", rubroVacaciones.getId());
+				mapaDetalle.put("contratoId", contratoIf.getId());
+				
+				Date fechaInicio = contratoIf.getFechaFin();
+				if ( fechaInicio == null )
+					throw new GenericBusinessException("Contrato no tiene Fecha Inicio");
+
+				Date fechaFin = contratoIf.getFechaFin();
+				if ( fechaFin == null )
+					throw new GenericBusinessException("Contrato no tiene Fecha Fin");
+					
+				Collection<String> setMesesAnios = utilesLocal.getMesesRolPago(fechaInicio,fechaFin);
+				Map<String, Object> mapaRolPagoPorFecha = new HashMap<String, Object>();
+				for( Iterator<String> itMeses = setMesesAnios.iterator() ; itMeses.hasNext() ; ){
+					String fecha = itMeses.next();
+					String mes = fecha.split("-")[0];
+					String anio = fecha.split("-")[1];
+					mapaRolPagoPorFecha.put("mes", mes);
+					mapaRolPagoPorFecha.put("anio", anio );
+					mapaRolPagoPorFecha.put("tiporolId", tipoRolMensual.getId());
+
+					Collection<RolPagoIf> roles = findRolPagoByQuery(mapaRolPagoPorFecha);
+
+					for (RolPagoIf rol :roles  ){
+						//Se establece el Rol de pago Id en el mapa de busqueda para el detalle
+						mapaDetalle.put("rolpagoId", rol.getId());
+						Collection<RolPagoDetalleIf> detalles = rolPagoDetalleLocal.findRolPagoDetalleByQuery(mapaDetalle);
+						for ( RolPagoDetalleIf detalle : detalles  ){
+							detalle.setEstado(EstadoRolPagoDetalle.PAGADO.getLetra() );
+							String observacion = utilitariosLocal.getNombreMes(Integer.parseInt(mes))+"-"+anio;
+							RolPagoDetalleIf rolDetalle = registrarRolPagoDetalleDecimosFondosAportesVacaciones(rolPagoIf, detalle.getContratoId(), detalle, null,observacion);
+							rolPagoDetalleLocal.addRolPagoDetalle(rolDetalle);
+							tieneDetalle = true;
+						}
+					}
+
+				}
+			} else 
+				throw new GenericBusinessException("Generación de Rol de Pago para "+tipoRolIf.getNombre()+" no implementado");
+
+			if ( !tieneDetalle )
+				throw new GenericBusinessException("No existe información del "+tipoRolIf.getNombre()+" para crear detalle de Rol de Pago");
+		} catch(GenericBusinessException ex ){
+			ctx.setRollbackOnly();
+			ex.printStackTrace();
+			throw new GenericBusinessException(ex.getMessage());
+		} catch(Exception ex ){
+			ctx.setRollbackOnly();
+			ex.printStackTrace();
+			throw new GenericBusinessException("Error general al guardar Rol de Pago.");
+		}
+
+	}
+	
+	private RubroEventualIf buscarEnMapaEventualesQuincenalByRubro(Map<Long, RolPagoDetalleIf> mapaEventualesQuincenal, Long rubroId) throws GenericBusinessException{
+		for( Iterator<Long> itMapa = mapaEventualesQuincenal.keySet().iterator() ; itMapa.hasNext() ; ){
+			RolPagoDetalleIf rpd = mapaEventualesQuincenal.get(itMapa.next());
+			RubroEventualIf re = rubroEventualLocal.getRubroEventual(rpd.getRubroEventualId());
+			if ( rubroId.equals(re.getRubroId()) ){
+				mapaEventualesQuincenal.remove(rpd.getId());
+				return re;
+			}
+		}
+		return null;
+	}
+
+	//DETERMINA SI UN RUBRO YA EXISTE EN EL DETALLE DEL ROL DE UN CONTRATO
+	private boolean existeRubroEnRolPagoDetalle(Map<String, Object> mapaBusquedaDetalle, Long rubroId) throws GenericBusinessException{
+		mapaBusquedaDetalle.put("rubroId", rubroId);
+		Collection<RolPagoDetalleIf> detallesEncontrados = rolPagoDetalleLocal.findRolPagoDetalleByQueryByEstados(mapaBusquedaDetalle
+				, EstadoRolPagoDetalle.AUTORIZADO.getLetra(), EstadoRolPagoDetalle.PAGADO.getLetra() );
+		if ( detallesEncontrados.size() == 0 )
+			return false;
+		return true;
+	}
+
+	private TipoRolIf buscarTipoRolIf(Collection<TipoRolIf> tiposRolPago,
+			String nombreTipoRol) {
+		TipoRolIf tipoRol = null;
+		for ( TipoRolIf tipoRolI : tiposRolPago ){
+			if ( tipoRolI.getNombre().contains(nombreTipoRol) ){
+				tipoRol = tipoRolI;
+				break;
+			}
+		}
+		return tipoRol;
+	}
+	
+	private void registrarDecimosAportesFondos(RolPagoIf rolPagoIf, Date fechaRolPago//,Map<Long, RubroIf> mapaRubros
+			, ContratoIf contratoIf,Double totalIngresos,RubroIf rubroIf,TipoRol tipoRol,Map<String, BigDecimal> codigoValorxRubro) throws GenericBusinessException,
+			ParseException {
+		Map<String, Object> mapa = new HashMap<String, Object>();
+		mapa.put("contratoId", contratoIf.getId());
+		mapa.put("rubroId", rubroIf.getId());
+		Collection<ContratoRubroIf> contratosRubros = contratoRubroLocal.findContratoRubroByQuery(mapa);
+		for ( ContratoRubroIf contratoRubro : contratosRubros ){
+			BigDecimal valor = calcularValorDelMes(tipoRol,fechaRolPago, contratoIf,totalIngresos,rubroIf,codigoValorxRubro);
+			RolPagoDetalleIf rolPagoDetalleIf = registrarRolPagoDetalleProvisionado(rolPagoIf, contratoIf, contratoRubro,valor,null);
+			rolPagoDetalleLocal.addRolPagoDetalle(rolPagoDetalleIf);
+		}
+	}
+	
+	private void registrarVacaciones(RolPagoIf rolPagoIf, Date fechaRolPago, ContratoIf contratoIf, 
+			Double totalIngresos, RubroIf rubroIf, TipoRol tipoRol, Map<String, BigDecimal> codigoValorxRubro) throws GenericBusinessException, ParseException {
+		Map<String, Object> mapa = new HashMap<String, Object>();
+		mapa.put("contratoId", contratoIf.getId());
+		mapa.put("rubroId", rubroIf.getId());
+		Collection<ContratoRubroIf> contratosRubros = contratoRubroLocal.findContratoRubroByQuery(mapa);
+		for ( ContratoRubroIf contratoRubro : contratosRubros ){
+			BigDecimal valor = calcularValorDelMes(tipoRol,fechaRolPago, contratoIf,totalIngresos,rubroIf,codigoValorxRubro);
+			RolPagoDetalleIf rolPagoDetalleIf = registrarRolPagoDetalleProvisionado(rolPagoIf, contratoIf, contratoRubro,valor,null);
+			rolPagoDetalleLocal.addRolPagoDetalle(rolPagoDetalleIf);
+		}
+	}
+
+	private BigDecimal calcularValorDelMes(TipoRol tipoRol,Date fechaRolPago,ContratoIf contratoIf, Double totalIngresos,RubroIf rubroIf,Map<String, BigDecimal> codigoValorxRubro)
+	throws ParseException, GenericBusinessException {
+		Double valor = 0.0;
+		Date fechaInicioContrato = contratoIf.getFechaInicio();
+		Date fechaFinContrato = contratoIf.getFechaFin();
+		if ( tipoRol == TipoRol.QUINCENAL || tipoRol == TipoRol.MENSUAL ){
+			if ( esFechaInicioContrato(fechaInicioContrato,fechaRolPago) ||
+				esFechaFinContrato(fechaFinContrato,fechaRolPago) ){
+				int mesInicioContrato = fechaInicioContrato.getMonth();
+				int diaFinMesQuincena;
+				int diaFin;
+				if (tipoRol == TipoRol.QUINCENAL){
+					diaFinMesQuincena = 15;
+					diaFin = fechaFinContrato.getDate()<diaFinMesQuincena ? fechaFinContrato.getDate() : diaFinMesQuincena ;
+				} else{
+					diaFinMesQuincena = utilitariosLocal.getFechaFinMes(mesInicioContrato, fechaInicioContrato.getYear()).getDate();
+					diaFin = diaFinMesQuincena;
+					//Si es que el mes y el anio del fin de contrato y el rol de pago coinciden, hay
+					//que sacar el dia menor entre los dos para el calculo proporcional del valor. 
+					if ( esFechaFinContrato(fechaFinContrato,fechaRolPago) ){
+						int diaFinContrato = contratoIf.getFechaFin().getDate();
+						diaFin = Math.min(diaFinMesQuincena,diaFinContrato);
+					}
+					
+				}
+				int diaInicioContrato = fechaInicioContrato.getDate() - 1; //Se le resta 1 dia, para considerar el dia que entra como trabajado
+				if ( diaFin > diaInicioContrato ){
+					Calendar cal = Calendar.getInstance();
+					cal.setTime(fechaRolPago);
+					int ultimoDiaMes = cal.getActualMaximum(Calendar.DAY_OF_MONTH);
+					int diasLaborados = diaFin-diaInicioContrato;
+					//valor = ((double)(diaFin-diaInicioContrato)/(double)diaFinMesQuincena)*(totalIngresos);
+					if ( diaFin != diasLaborados )
+						valor = totalIngresos / ultimoDiaMes * diasLaborados;
+					else 
+						valor = totalIngresos;
+				}
+			} else{
+				valor = totalIngresos;
+			}
+		} else if ( tipoRol == TipoRol.DECIMO_TERCERO ){
+			String politica = rubroIf.getPolitica();
+			if ( !politica.contains("TOTAL") )
+				throw new GenericBusinessException("No se encontró la palabra TOTAL en la politica del Rubro Decimo Tercero");
+			politica = politica.replaceAll( "TOTAL", String.valueOf(totalIngresos) );
+			valor = evaluadorExpresionJavaScript(politica).doubleValue();
+		} else if ( tipoRol == TipoRol.VACACIONES ){
+			String politica = rubroIf.getPolitica();
+			if ( !politica.contains("TOTAL") )
+				throw new GenericBusinessException("No se encontró la palabra TOTAL en la politica del Rubro Vacaciones");
+			politica = politica.replaceAll( "TOTAL", String.valueOf(totalIngresos) );
+			valor = evaluadorExpresionJavaScript(politica).doubleValue();
+		}else if ( tipoRol == TipoRol.DECIMO_CUARTO || tipoRol == TipoRol.APORTE_PATRONAL  
+				|| tipoRol == TipoRol.FONDO_RESERVA ){
+			String politicaCambiada = cambiarPolitica(rubroIf, codigoValorxRubro);
+			valor = evaluadorExpresionJavaScript(politicaCambiada).doubleValue();
+		} else 
+			throw new GenericBusinessException("Cálculo de Valor para Tipo de Rol "+tipoRol+" no implementado");
+		return utilitariosLocal.redondeoValor(new BigDecimal(valor));
+	}
+
+	private boolean esFechaInicioContrato(Date fechaInicioContrato, Date fechaRolPago ){
+		return (fechaRolPago.getMonth() == fechaInicioContrato.getMonth() &&
+				 fechaRolPago.getYear() == 	fechaInicioContrato.getYear() );
+	}
+	
+	private boolean esFechaFinContrato(Date fechaFinContrato, Date fechaRolPago ){
+		return ( fechaRolPago.getMonth() == fechaFinContrato.getMonth() &&
+				 fechaRolPago.getYear() == 	fechaFinContrato.getYear() );
+	}
+	
+	private RubroIf verificarRubro(Map<Long,RubroIf> mapa,Long rubroId) throws GenericBusinessException{
+		if ( !mapa.containsKey(rubroId) ){
+			RubroIf rubroIf = rubroLocal.getRubro(rubroId);
+			mapa.put(rubroId, rubroIf);
+			return rubroIf;
+		} else
+			return mapa.get(rubroId);
+	}
+	
+	/*private TipoRolIf verificarTipoRolIf(Map<Long,TipoRolIf> mapa,Long tipoRolId) throws GenericBusinessException{
+		if ( !mapa.containsKey(tipoRolId) ){
+			TipoRolIf tr = tipoRolLocal.getTipoRol(tipoRolId);
+			mapa.put(tipoRolId, tr);
+			return tr;
+		} else
+			return mapa.get(tipoRolId);
+	}*/
+
+	private void registrarEgresosQuincenales(RolPagoIf rolPagoIf,
+			RubroIf rubroQuincenal,
+			TipoRolIf tipoRolQuincenal,
+			Collection<RolPagoDetalleIf> rolPagoDetalleCollection,
+			ContratoIf contratoIf,
+			//Map<String, Object> mapaBusquedaDetalle) throws GenericBusinessException {
+			Map<Long, RubroIf> mapaRubros,Map<Long, RolPagoDetalleIf> mapaEventualesQuincena ) throws GenericBusinessException {
+		Map<String, Object> mapaRolPago = new HashMap<String, Object>();
+		mapaRolPago.put("tiporolId", tipoRolQuincenal.getId());
+		mapaRolPago.put("tipocontratoId", rolPagoIf.getTipocontratoId());
+		mapaRolPago.put("mes", rolPagoIf.getMes());
+		mapaRolPago.put("anio", rolPagoIf.getAnio());
+		Collection<RolPagoIf> rolPagoQuincenales = findRolPagoByQuery(mapaRolPago);
+		for (RolPagoIf rolPagoQuincenal : rolPagoQuincenales){
+			Map<String,Object> mapaRolPagoDetalle = new HashMap<String, Object>();
+			mapaRolPagoDetalle.put("rubroId", " not null ");
+			mapaRolPagoDetalle.put("rolpagoId", rolPagoQuincenal.getId());
+			mapaRolPagoDetalle.put("contratoId",  contratoIf.getId());
+			//Se busca los detalles del rol que le corresponde a un contrato determinado
+			//para poder sacar cuanto se le dio en la quincena.
+			Collection<RolPagoDetalleIf> detalles = rolPagoDetalleLocal
+				.findRolPagoDetalleByQueryByEstados(mapaRolPagoDetalle
+					,EstadoRolPagoDetalle.AUTORIZADO.getLetra(),EstadoRolPagoDetalle.PAGADO.getLetra() );
+			double total = 0.0;
+			for ( RolPagoDetalleIf rpdq : detalles ){
+				if ( rpdq.getRubroId() != null ){
+					RubroIf rubroIf = null;
+					//if ( rpdq.getRubroId() != null ){
+						rubroIf = verificarRubro(mapaRubros, rpdq.getRubroId());
+					//}
+					OperacionNomina on = utilesLocal.getIngresoEgreso(tipoRolQuincenal, rubroIf);
+					if ( on == OperacionNomina.INGRESO )
+						total += rpdq.getValor().doubleValue();
+					else 
+						total -= rpdq.getValor().doubleValue();
+				}	
+			}
+			
+			mapaRolPagoDetalle = new HashMap<String, Object>();
+			mapaRolPagoDetalle.put("rubroEventualId", " not null ");
+			mapaRolPagoDetalle.put("rolpagoId", rolPagoQuincenal.getId());
+			mapaRolPagoDetalle.put("contratoId",  contratoIf.getId());
+			mapaRolPagoDetalle.put("tipoRolIdCobro",tipoRolQuincenal.getId());
+			mapaRolPagoDetalle.put("mesCobro",rolPagoIf.getMes());
+			mapaRolPagoDetalle.put("anioCobro",rolPagoIf.getAnio());
+			mapaRolPagoDetalle.put("tipoContratoId",rolPagoIf.getTipocontratoId());
+			//Se busca los detalles del rol que le corresponde a un contrato determinado
+			//para poder sacar cuanto se le dio en la quincena.
+			detalles = rolPagoDetalleLocal
+				.findRolPagoDetalleEventualesByMapByEstados(mapaRolPagoDetalle
+					,EstadoRolPagoDetalle.EMITIDO.getLetra()
+					,EstadoRolPagoDetalle.AUTORIZADO.getLetra()
+					,EstadoRolPagoDetalle.PAGADO.getLetra() );
+			for ( RolPagoDetalleIf rpdq : detalles ){
+				total -= rpdq.getValor().doubleValue();
+				
+				//RubroEventualIf re = rubroEventualLocal.getRubroEventual(rpdq.getRubroEventualId());
+				//RubroIf r = verificarRubro(mapaRubros, re.getRubroId());
+				//if ( r == null )
+				//	throw new GenericBusinessException("Rubro Eventual no tiene rubro registrado !!");
+				//RolPagoDetalleIf rolPagoDetalleIf = registrarRolPagoDetalleQuincenal(
+				//		rolPagoIf, contratoIf,r.getId(),rpdq.getValor());
+				//RolPagoDetalleIf rolPagoDetalleGuardado = rolPagoDetalleLocal.addRolPagoDetalle(rolPagoDetalleIf);
+				//rolPagoDetalleCollection.add(rolPagoDetalleGuardado);
+				//mapaEventualesQuincena.put(re.getId(), re);
+				mapaEventualesQuincena.put(rpdq.getId(), rpdq);
+			}
+			total = utilitariosLocal.redondeoValor(total);
+			
+			
+			//AQUI EL VALOR DEL INGRESO QUINCENAL(INGRESOS - EGRESOS) VA COMO EGRESO MENSUAL
+			RolPagoDetalleIf rolPagoDetalleIf = registrarRolPagoDetalleQuincenal(
+				rolPagoIf, contratoIf.getId(),rubroQuincenal.getId(),BigDecimal.valueOf(total));
+			RolPagoDetalleIf rolPagoDetalleGuardado = rolPagoDetalleLocal.addRolPagoDetalle(rolPagoDetalleIf);
+			rolPagoDetalleCollection.add(rolPagoDetalleGuardado);
+			
+			
+		}
+	}
+	
+	private RolPagoDetalleIf registrarRolPagoDetalleProvisionado(RolPagoIf rolPagoIf,
+			ContratoIf contrato, ContratoRubroIf contratoRubro,
+			BigDecimal valor,String observacion) throws GenericBusinessException {
+
+		RolPagoDetalleIf rolPagoDetalleIf =  new RolPagoDetalleData();
+		rolPagoDetalleIf.setRolpagoId(rolPagoIf.getId());
+		rolPagoDetalleIf.setContratoId(contrato.getId());
+		rolPagoDetalleIf.setRubroId(contratoRubro.getRubroId());
+		rolPagoDetalleIf.setValor(valor);	
+		rolPagoDetalleIf.setEstado(EstadoRolPagoDetalle.PROVISIONADO.getLetra() );
+		rolPagoDetalleIf.setObservacion(observacion);
+		return rolPagoDetalleIf;
+	}
+
+	private RolPagoDetalleIf registrarRolPagoDetalle(RolPagoIf rolPagoIf,
+			ContratoIf contrato, ContratoRubroIf contratoRubro,
+			BigDecimal valor,String observacion) throws GenericBusinessException {
+
+		RolPagoDetalleIf rolPagoDetalleIf =  new RolPagoDetalleData();
+		rolPagoDetalleIf.setRolpagoId(rolPagoIf.getId());
+		rolPagoDetalleIf.setContratoId(contrato.getId());
+		rolPagoDetalleIf.setRubroId(contratoRubro.getRubroId());
+		rolPagoDetalleIf.setValor(valor);	
+		rolPagoDetalleIf.setEstado(EstadoRolPagoDetalle.EMITIDO.getLetra() );
+		rolPagoDetalleIf.setObservacion(observacion);
+		return rolPagoDetalleIf;
+	}
+
+	private RolPagoDetalleIf registrarRolPagoDetalleQuincenal(RolPagoIf rolPagoIf,
+			Long contratoId, Long rubroId, BigDecimal valor) throws GenericBusinessException {
+		RolPagoDetalleIf rolPagoDetalleIf =  new RolPagoDetalleData();
+		rolPagoDetalleIf.setRolpagoId(rolPagoIf.getId());
+		rolPagoDetalleIf.setContratoId(contratoId);
+		rolPagoDetalleIf.setRubroId(rubroId);
+		rolPagoDetalleIf.setValor(valor);
+		rolPagoDetalleIf.setEstado(EstadoRolPagoDetalle.EMITIDO.getLetra() );
+		return rolPagoDetalleIf;
+	}
+	
+	/*private RolPagoDetalleIf registrarRolPagoDetalleQuincenal(RolPagoIf rolPagoIf,
+			ContratoIf contrato, RolPagoDetalleIf detalle) throws GenericBusinessException {
+		RolPagoDetalleIf rolPagoDetalleIf =  new RolPagoDetalleData();
+		rolPagoDetalleIf.setRolpagoId(rolPagoIf.getId());
+		rolPagoDetalleIf.setContratoId(contrato.getId());
+		rolPagoDetalleIf.setRubroId(detalle.getRubroId());
+		rolPagoDetalleIf.setValor(detalle.getValor());
+		rolPagoDetalleIf.setEstado(EstadoRolPagoDetalle.getLetraEstadoRolPagoDetalle(EstadoRolPagoDetalle.EMITIDO));
+		return rolPagoDetalleIf;
+	}*/
+
+	private RolPagoDetalleIf registrarRolPagoDetalleDecimosFondosAportesVacaciones(RolPagoIf rolPagoIf,
+			Long contratoId, RolPagoDetalleIf detalle,Date fechaPago,String observacion) throws GenericBusinessException {
+		RolPagoDetalleIf rolPagoDetalleIf =  new RolPagoDetalleData();
+		rolPagoDetalleIf.setRolpagoId(rolPagoIf.getId());
+		rolPagoDetalleIf.setContratoId(contratoId);
+		rolPagoDetalleIf.setRubroId(detalle.getRubroId());
+		rolPagoDetalleIf.setValor(detalle.getValor());
+		rolPagoDetalleIf.setEstado(EstadoRolPagoDetalle.EMITIDO.getLetra() );
+		rolPagoDetalleIf.setFechaPago(fechaPago);
+		rolPagoDetalleIf.setObservacion(observacion);
+		return rolPagoDetalleIf;
+	}
+
+	private BigDecimal calcularValor(ContratoRubroIf contratoRubro,
+			Map<String, BigDecimal> codigoValorxRubro,RubroIf rubroIf)
+	throws GenericBusinessException {
+		BigDecimal valor = null;
+		//boolean rubroEncontrado = false;
+		if ( rubroIf.getModoOperacion().equals(PoliticaRubro.CALCULADO.toString().subSequence(0, 1)) ){
+			/*politicaCambiada = rubroIf.getPolitica();
+			for (Iterator it = codigoValorxRubro.keySet().iterator(); it.hasNext() ; ){
+				String codigo = (String)it.next();
+				BigDecimal valorRubro = codigoValorxRubro.get(codigo).setScale(2);
+				if ( rubroIf.getPolitica().contains(codigo) ){
+					//TODO: MEJORAR LA FORMA DE REEMPLAZO DE CODIGOS DE RUBROS EN LA POLITICA
+					politicaCambiada = politicaCambiada.replaceAll(codigo, valorRubro.toString());
+					rubroEncontrado = true;
+				}
+			}
+			if ( rubroEncontrado ){
+				valor = evaluadorExpresionJavaScript(politicaCambiada);
+			} else{
+				throw new GenericBusinessException("No se encuentra código de rubro en la política : "+rubroIf.getPolitica()+" del Rubro: "+rubroIf.getNombre());
+			}*/
+			String politicaCambiada = cambiarPolitica(rubroIf, codigoValorxRubro);
+			valor = evaluadorExpresionJavaScript(politicaCambiada);
+		}else {
+			if ( contratoRubro.getValor()!=null )
+				valor =  utilitariosLocal.redondeoValor(contratoRubro.getValor());
+			else
+				valor =  BigDecimal.ZERO;
+		}
+		return valor;
+	}
+
+	private String cambiarPolitica ( RubroIf rubroIf,Map<String, BigDecimal> codigoValorxRubro ) throws GenericBusinessException{
+		String politicaCambiada = rubroIf.getPolitica();
+		boolean rubroEncontrado = false;
+		for (Iterator it = codigoValorxRubro.keySet().iterator(); it.hasNext() ; ){
+			String codigo = (String)it.next();
+			BigDecimal valorRubro = utilitariosLocal.redondeoValor(codigoValorxRubro.get(codigo));
+			if ( politicaCambiada.contains(codigo) ){
+				//TODO: MEJORAR LA FORMA DE REEMPLAZO DE CODIGOS DE RUBROS EN LA POLITICA
+				politicaCambiada = politicaCambiada.replaceAll(codigo, valorRubro.toString());
+				rubroEncontrado = true;
+			}
+		}
+		if ( rubroEncontrado ){
+			return politicaCambiada;
+		} else
+			throw new GenericBusinessException("No se encuentra código de rubro en la política "+rubroIf.getPolitica()+" del Rubro "+rubroIf.getNombre());
+	}
+
+	private BigDecimal evaluadorExpresionJavaScript(String expresion) throws GenericBusinessException{
+		ScriptEngineManager manager = new ScriptEngineManager();
+		ScriptEngine engine = manager.getEngineByName("js");
+
+		try {
+			//String expression = "3+4";
+			Object result = engine.eval(expresion);
+			Double resultadoDouble = (Double)result;
+			BigDecimal valor = utilitariosLocal.redondeoValor( new BigDecimal(resultadoDouble) );
+			return valor;
+			//System.out.println(expression+" = "+result);
+
+		} catch(ScriptException se) {
+			se.printStackTrace();
+			throw new GenericBusinessException("Error en la evaluación de la expresión");
+		} catch(Exception se) {
+			se.printStackTrace();
+			throw new GenericBusinessException("Error general en la evaluación de la expresión");
+		}
+
+	}
+	
+	/*
+	@TransactionAttribute(TransactionAttributeType.REQUIRED)
+	public void cerrarRolPago(RolPagoIf rolPagoIf,Collection<Long> rolPagoDetalleIdCollection) throws GenericBusinessException {
+		try{
+			if ( rolPagoIf != null && rolPagoIf.getId() != null){
+				rolPagoIf = getRolPago(rolPagoIf.getId());
+				TipoRolIf tipoRolIf = tipoRolLocal.getTipoRol(rolPagoIf.getTiporolId());
+				TipoRol tipoRol = utilesLocal.obtenerTipoRol(tipoRolIf);
+				Map<Long,RubroIf> mapaRubros = new HashMap<Long, RubroIf>();
+
+				//SE PROCESAN LOS DETALLES DEL ROL DE PAGOS
+				GregorianCalendar gc = new GregorianCalendar();
+				Date fechaHoy = new Date(gc.getTime().getTime());
+				//double sumaValores = 0.0;
+				double sumaDetalle = 0.0;  
+				
+				if ( rolPagoDetalleIdCollection == null || rolPagoDetalleIdCollection.size() == 0 )
+					throw new GenericBusinessException("Rol de Pago vacío o no tiene detalles");
+				OperacionNomina operacion = null;
+				for ( Long rolPagoDetalleId : rolPagoDetalleIdCollection ){
+					RolPagoDetalleIf rolPagoDetalleIf = rolPagoDetalleLocal.getRolPagoDetalle(rolPagoDetalleId);
+					//Si el rol de un empleado ha sido autorizado se lo toma en cuenta en el proceso.
+					if ( rolPagoDetalleIf.getEstado().equals(EstadoRolPagoDetalle.getLetraEstadoRolPagoDetalle(EstadoRolPagoDetalle.AUTORIZADO)) ){
+							RubroIf rubroIf = verificarRubro(mapaRubros, rolPagoDetalleIf.getRubroId());
+							TipoRol tipoRolDetalle = utilesLocal.getTipoRolByRubro(rubroIf);
+		
+							if ( tipoRol == TipoRol.MENSUAL ){
+		
+								if ( tipoRolDetalle == TipoRol.QUINCENAL ||  tipoRolDetalle == TipoRol.MENSUAL  ){
+									rolPagoDetalleIf.setEstado(EstadoRolPagoDetalle.getLetraEstadoRolPagoDetalle(EstadoRolPagoDetalle.AUTORIZADO));
+									operacion = utilesLocal.getIngresoEgreso(tipoRolIf, rubroIf);
+									if ( operacion == OperacionNomina.INGRESO )
+										sumaDetalle += rolPagoDetalleIf.getValor().doubleValue();
+								}
+								else if ( tipoRolDetalle == TipoRol.DECIMO_TERCERO || tipoRolDetalle == TipoRol.DECIMO_CUARTO
+										|| tipoRolDetalle == TipoRol.APORTE_PATRONAL || tipoRolDetalle == TipoRol.FONDO_RESERVA){
+									rolPagoDetalleIf.setEstado(EstadoRolPagoDetalle.getLetraEstadoRolPagoDetalle(EstadoRolPagoDetalle.PROVISIONADO));
+								} //else
+								//	throw new GenericBusinessException("Tipo de Rol para rubro "+rubroIf.getNombre()+" no considerado para proceso");
+		
+							} else if ( tipoRol == TipoRol.DECIMO_TERCERO || tipoRol == TipoRol.DECIMO_CUARTO
+									|| tipoRol == TipoRol.APORTE_PATRONAL || tipoRol == TipoRol.FONDO_RESERVA){
+		
+								rolPagoDetalleIf.setEstado(EstadoRolPagoDetalle.getLetraEstadoRolPagoDetalle(EstadoRolPagoDetalle.AUTORIZADO));
+								sumaDetalle += rolPagoDetalleIf.getValor().doubleValue();
+							} else 
+								throw new GenericBusinessException(tipoRolIf.getNombre()+" no soportado para cierre de detalle !!");
+							//sumaValores += rolPagoDetalleIf.getValor().doubleValue() ;
+							rolPagoDetalleIf.setFechaPago(fechaHoy);
+							//System.out.println("----- Total de Rol de Pago para asiento: "+sumaValores);
+					}
+				}
+				sumaDetalle = utilitariosLocal.redondeoValor(sumaDetalle);
+				rolPagoIf.setEstado(EstadoRolPago.CERRADO.toString().substring(0,1));
+
+				AsientoIf asiento = null;
+				if ( tipoRol == TipoRol.MENSUAL )
+					asiento = rolPagoAsientoAutomaticoHandlerLocal.generarAsientoAutomaticoMensual(rolPagoIf, EstadoRolPagoDetalle.getLetraEstadoRolPagoDetalle(EstadoRolPagoDetalle.AUTORIZADO));
+				else if ( tipoRol == TipoRol.DECIMO_TERCERO || tipoRol == TipoRol.DECIMO_CUARTO 
+						|| tipoRol == TipoRol.APORTE_PATRONAL || tipoRol == TipoRol.FONDO_RESERVA )
+					asiento = rolPagoAsientoAutomaticoHandlerLocal.generarAsientoAutomaticoDecimosAportesFondos(rolPagoIf, tipoRolIf, tipoRol);
+
+				//VERIFICACION DE VALORES
+				if ( asiento != null ){
+					double debe = 0.0; double haber = 0.0;
+					Collection<AsientoDetalleIf> asientosDetalle = asientoDetalleLocal.findAsientoDetalleByAsientoId(asiento.getId());
+					for ( Iterator itAsientos = asientosDetalle.iterator() ; itAsientos.hasNext() ; ){
+						AsientoDetalleIf asientoDetalle = (AsientoDetalleIf) itAsientos.next();
+						debe += asientoDetalle.getDebe().doubleValue();
+						haber += asientoDetalle.getHaber().doubleValue();
+					}
+					debe = utilitariosLocal.redondeoValor(debe);
+					haber = utilitariosLocal.redondeoValor(haber);
+					if (  debe != sumaDetalle )
+						throw new GenericBusinessException("Error al guardar "+tipoRolIf.getNombre()+", el valor del Debe y Haber no coinciden con el detalle del Rol");
+					else if ( debe != haber )
+						throw new GenericBusinessException("Error al guardar "+tipoRolIf.getNombre()+", el valor del Debe y Haber no coinciden en el Asiento");
+
+				} else
+					throw new GenericBusinessException("No se gener\u00f3 el asiento del "+tipoRolIf.getNombre());
+
+			} else
+				throw new GenericBusinessException("Rol de Pago nulo");
+		} catch( GenericBusinessException e ){
+			ctx.setRollbackOnly();
+			e.printStackTrace();
+			throw new GenericBusinessException(e.getMessage());
+		} catch(Exception e){
+			ctx.setRollbackOnly();
+			e.printStackTrace();
+			throw new GenericBusinessException("Error general al cerrar el Rol de Pago");
+		}
+	}*/
+
+	/*
+	@TransactionAttribute(TransactionAttributeType.REQUIRED)
+	public void cerrarRolPago(RolPagoIf rolPagoIf) throws GenericBusinessException {
+		try{
+			if ( rolPagoIf != null && rolPagoIf.getId() != null){
+				rolPagoIf = getRolPago(rolPagoIf.getId());
+				TipoRolIf tipoRolIf = tipoRolLocal.getTipoRol(rolPagoIf.getTiporolId());
+				TipoRol tipoRol = utilesLocal.obtenerTipoRol(tipoRolIf);
+				Map<Long,RubroIf> mapaRubros = new HashMap<Long, RubroIf>();
+
+				//SE PROCESAN LOS DETALLES DEL ROL DE PAGOS
+				GregorianCalendar gc = new GregorianCalendar();
+				Date fechaHoy = new Date(gc.getTime().getTime());
+				//double sumaValores = 0.0;
+				double sumaDetalle = 0.0;  
+				Collection<RolPagoDetalleIf> detalles = null;
+				if ( tipoRol == TipoRol.QUINCENAL || tipoRol == TipoRol.MENSUAL ){
+					Map<String, Object> mapa = new HashMap<String, Object>();
+					mapa.put("rolpagoId", rolPagoIf.getId());
+					detalles = rolPagoDetalleLocal.findRolPagoDetalleByQueryNormal(mapa);
+				}
+				else
+					detalles = rolPagoDetalleLocal.findRolPagoDetalleByRolpagoId(rolPagoIf.getId());
+
+				if ( detalles == null || detalles.size() == 0 )
+					throw new GenericBusinessException("Rol de Pago vacío o no tiene detalles");
+				OperacionNomina operacion = null;
+				for ( RolPagoDetalleIf rolPagoDetalleIf : detalles ){
+					//Si el rol de un empleado ha sido autorizado se lo toma en cuenta en el proceso.
+					if ( rolPagoDetalleIf.getEstado().equals(EstadoRolPagoDetalle.getLetraEstadoRolPagoDetalle(EstadoRolPagoDetalle.AUTORIZADO)) ){
+							RubroIf rubroIf = verificarRubro(mapaRubros, rolPagoDetalleIf.getRubroId());
+							TipoRol tipoRolDetalle = utilesLocal.getTipoRolByRubro(rubroIf);
+		
+							if ( tipoRol == TipoRol.MENSUAL ){
+		
+								if ( tipoRolDetalle == TipoRol.QUINCENAL ||  tipoRolDetalle == TipoRol.MENSUAL  ){
+									rolPagoDetalleIf.setEstado(EstadoRolPagoDetalle.getLetraEstadoRolPagoDetalle(EstadoRolPagoDetalle.PAGADO));
+									operacion = utilesLocal.getIngresoEgreso(tipoRolIf, rubroIf);
+									if ( operacion == OperacionNomina.INGRESO )
+										sumaDetalle += rolPagoDetalleIf.getValor().doubleValue();
+								}
+								else if ( tipoRolDetalle == TipoRol.DECIMO_TERCERO || tipoRolDetalle == TipoRol.DECIMO_CUARTO
+										|| tipoRolDetalle == TipoRol.APORTE_PATRONAL || tipoRolDetalle == TipoRol.FONDO_RESERVA){
+									rolPagoDetalleIf.setEstado(EstadoRolPagoDetalle.getLetraEstadoRolPagoDetalle(EstadoRolPagoDetalle.PROVISIONADO));
+								} //else
+								//	throw new GenericBusinessException("Tipo de Rol para rubro "+rubroIf.getNombre()+" no considerado para proceso");
+		
+							} else if ( tipoRol == TipoRol.DECIMO_TERCERO || tipoRol == TipoRol.DECIMO_CUARTO
+									|| tipoRol == TipoRol.APORTE_PATRONAL || tipoRol == TipoRol.FONDO_RESERVA){
+		
+								rolPagoDetalleIf.setEstado(EstadoRolPagoDetalle.getLetraEstadoRolPagoDetalle(EstadoRolPagoDetalle.PAGADO));
+								sumaDetalle += rolPagoDetalleIf.getValor().doubleValue();
+							} else 
+								throw new GenericBusinessException(tipoRolIf.getNombre()+" no soportado para cierre de detalle !!");
+							//sumaValores += rolPagoDetalleIf.getValor().doubleValue() ;
+							rolPagoDetalleIf.setFechaPago(fechaHoy);
+							//System.out.println("----- Total de Rol de Pago para asiento: "+sumaValores);
+					}
+				}
+				sumaDetalle = utilitariosLocal.redondeoValor(sumaDetalle);
+				rolPagoIf.setEstado(EstadoRolPago.CERRADO.toString().substring(0,1));
+
+				AsientoIf asiento = null;
+				if ( tipoRol == TipoRol.MENSUAL )
+					asiento = rolPagoAsientoAutomaticoHandlerLocal.generarAsientoAutomaticoMensual(rolPagoIf, EstadoRolPagoDetalle.getLetraEstadoRolPagoDetalle(EstadoRolPagoDetalle.AUTORIZADO));
+				else if ( tipoRol == TipoRol.DECIMO_TERCERO || tipoRol == TipoRol.DECIMO_CUARTO 
+						|| tipoRol == TipoRol.APORTE_PATRONAL || tipoRol == TipoRol.FONDO_RESERVA )
+					asiento = rolPagoAsientoAutomaticoHandlerLocal.generarAsientoAutomaticoDecimosAportesFondos(rolPagoIf, tipoRolIf, tipoRol);
+
+				//VERIFICACION DE VALORES
+				if ( asiento != null ){
+					double debe = 0.0; double haber = 0.0;
+					Collection<AsientoDetalleIf> asientosDetalle = asientoDetalleLocal.findAsientoDetalleByAsientoId(asiento.getId());
+					for ( Iterator itAsientos = asientosDetalle.iterator() ; itAsientos.hasNext() ; ){
+						AsientoDetalleIf asientoDetalle = (AsientoDetalleIf) itAsientos.next();
+						debe += asientoDetalle.getDebe().doubleValue();
+						haber += asientoDetalle.getHaber().doubleValue();
+					}
+					debe = utilitariosLocal.redondeoValor(debe);
+					haber = utilitariosLocal.redondeoValor(haber);
+					if (  debe != sumaDetalle )
+						throw new GenericBusinessException("Error al guardar "+tipoRolIf.getNombre()+", el valor del Debe y Haber no coinciden con el detalle del Rol");
+					else if ( debe != haber )
+						throw new GenericBusinessException("Error al guardar "+tipoRolIf.getNombre()+", el valor del Debe y Haber no coinciden en el Asiento");
+
+				} else
+					throw new GenericBusinessException("No se gener\u00f3 el asiento del "+tipoRolIf.getNombre());
+
+			} else
+				throw new GenericBusinessException("Rol de Pago nulo");
+		} catch( GenericBusinessException e ){
+			ctx.setRollbackOnly();
+			e.printStackTrace();
+			throw new GenericBusinessException(e.getMessage());
+		} catch(Exception e){
+			ctx.setRollbackOnly();
+			e.printStackTrace();
+			throw new GenericBusinessException("Error general al cerrar el Rol de Pago");
+		}
+	}*/
+
+	/*private String getLetraEstadoDetalle(EstadoRolPagoDetalle estado) throws GenericBusinessException{
+		if ( estado == EstadoRolPagoDetalle.EMITIDO )
+			return estado.toString().substring(0,1);
+		else if ( estado == EstadoRolPagoDetalle.PROVISIONADO || estado == EstadoRolPagoDetalle.PAGADO 
+				|| estado == EstadoRolPagoDetalle.AUTORIZADO )
+			return estado.toString().substring(1,2);
+		throw new GenericBusinessException("Estado no considerado en la obtencion de Inicial");
+	}*/
+
+	/*private TipoRol getTipoRolPago(TipoRolIf tipoRolIf){
+		if ( tipoRolIf.getNombre().contains("QUINCENAL") )
+			return TipoRol.QUINCENAL;
+		else if( tipoRolIf.getNombre().contains("MENSUAL") )
+			return TipoRol.MENSUAL;
+		else if ( tipoRolIf.getNombre().contains("DECIMO") ){
+			if ( tipoRolIf.getNombre().contains("TERCER") )
+				return TipoRol.DECIMO_TERCERO;
+			else if ( tipoRolIf.getNombre().contains("CUARTO") )
+				return TipoRol.DECIMO_CUARTO;
+		}
+		return null;
+	}*/
+
+	@TransactionAttribute(TransactionAttributeType.REQUIRED)
+	public java.util.Collection findRolPagoByQueryByContratoIdByEmpleadoId(Map aMap) {
+		String objectName = "e";
+		String where = QueryBuilder.buildWhere(aMap, objectName);
+		String queryString = "from RolPagoEJB " + objectName + " where "
+		+ where;
+		Query query = manager.createQuery(queryString);
+
+		Set keys = aMap.keySet();
+		Iterator it = keys.iterator();
+
+		while (it.hasNext()) {
+			String propertyKey = (String) it.next();
+			Object property = aMap.get(propertyKey);
+			query.setParameter(propertyKey, property);
+
+		}
+
+		return query.getResultList();
+
+	}
+
+	/************************* RUBROS EVENTUALES ***********************************************/
+
+	public void actualizarRubroEventuales(Long contratoId, ArrayList<RubroEventualIf> rubrosEventualesColleccion, ArrayList<RubroEventualIf> rubrosEventualesRemovidos) throws GenericBusinessException {
+		try{
+			DecimalFormat formatoDosEnteros = new DecimalFormat("00");
+			ArrayList<RolPagoIf> rolesPago = new ArrayList<RolPagoIf>();
+			for(RubroEventualIf rubroEventualEleminado : rubrosEventualesRemovidos){
+				//RubroEventualEJB data = manager.find(RubroEventualEJB.class, rubroEventualEleminado.getId());
+				//manager.remove(data);
+				//Reviso en los roles detalles para ver si ya fue autorizado o pagado, si fue asi,no se puede eliminar.
+				Collection<RolPagoDetalleIf> rolesPagoEventuales = rolPagoDetalleLocal.findRolPagoDetalleByRubroEventualId(rubroEventualEleminado.getId());
+				if ( rolesPagoEventuales!= null && rolesPagoEventuales.size()>0 ){
+					for ( RolPagoDetalleIf rpde: rolesPagoEventuales ){
+						//if ( rpde.getEstado().equals( EstadoRolPagoDetalle.getLetraEstadoRolPagoDetalle(EstadoRolPagoDetalle.AUTORIZADO) ) ||
+						//		rpde.getEstado().equals( EstadoRolPagoDetalle.getLetraEstadoRolPagoDetalle(EstadoRolPagoDetalle.PAGADO) ) ){
+						if ( rpde.getEstado().equals( EstadoRolPagoDetalle.AUTORIZADO.getLetra() ) ||
+								rpde.getEstado().equals( EstadoRolPagoDetalle.PAGADO.getLetra() ) ){
+							throw new GenericBusinessException("Rubro Eventual con descripción: \n"+rubroEventualEleminado.getObservacion()+"\n ha sido Autorizado o Pagado !!");
+						} else{
+							rolPagoDetalleLocal.deleteRolPagoDetalle(rpde.getId());
+						}	
+					}
+				}
+				if ( !EstadoRubroEventual.EMITIDO.getLetra().equals(rubroEventualEleminado.getEstado()) )
+					throw new GenericBusinessException("El rubro eventual con descripcion: \n"
+							+rubroEventualEleminado.getObservacion()
+							+"\ntiene estado "+EstadoRubroEventual.getRubroEventualByLetra(rubroEventualEleminado.getEstado())
+							+"\nno puede ser eliminado !!"
+					);
+				rubroEventualLocal.deleteRubroEventual(rubroEventualEleminado.getId());
+			}
+			ContratoIf contratoIf = contratoLocal.getContrato(contratoId);
+			if ( contratoIf == null )
+				throw new GenericBusinessException("Contrato no existe !!");
+			for (RubroEventualIf modelRubroEventual : rubrosEventualesColleccion) {
+				modelRubroEventual.setContratoId(contratoId);
+				RubroEventualIf rubroEventual = rubroEventualLocal.registrarRubroEventual(modelRubroEventual);
+				//OJO, VERIFICA SI EL RUBRO EXISTE, SI NO EXISTE, LO CREA
+				verificarRolPago(rolesPago,contratoIf.getTipocontratoId(), rubroEventual,formatoDosEnteros);
+				if ( rubroEventual.getId()!=null )
+					rubroEventualLocal.saveRubroEventual(rubroEventual);
+				else
+					rubroEventualLocal.addRubroEventual(rubroEventual);
+			}
+		} catch(GenericBusinessException e){
+			ctx.setRollbackOnly();
+			e.printStackTrace();
+			throw new GenericBusinessException(e.getMessage());
+		} catch(Exception e){
+			ctx.setRollbackOnly();
+			e.printStackTrace();
+			throw new GenericBusinessException("Error general al guardar Rubros Eventuales !!");
+		}
+	}
+	
+	private RolPagoIf verificarRolPago(ArrayList<RolPagoIf> rolesPago,Long tipoContratoId,RubroEventualIf rubroEventual,DecimalFormat formatoDosEnteros) throws GenericBusinessException{
+		//Si tiene fecha de pago siginifica que se emite cheque y tiene que existir el rol de pago para ese mes y año 
+		if ( rubroEventual.getFechaPago() != null ){
+			Date fechaPago = rubroEventual.getFechaPago();
+			String mes = formatoDosEnteros.format(fechaPago.getMonth()+1);
+			String anio = utilitariosLocal.getYearFromDate(fechaPago);
+			for ( RolPagoIf rolPagoIf : rolesPago ){
+				if (  mes.equals(rolPagoIf.getMes()) && anio.equals(rolPagoIf.getAnio()) 
+					  && rubroEventual.getTipoRolIdPago().equals(rolPagoIf.getTiporolId())
+					  && tipoContratoId.equals(rolPagoIf.getTipocontratoId()) ){
+					return rolPagoIf;
+				}
+			}
+			Map<String, Object> mapaRolPago =  new HashMap<String, Object>();
+			mapaRolPago.put("mes", mes);
+			mapaRolPago.put("anio", anio);
+			mapaRolPago.put("tiporolId", rubroEventual.getTipoRolIdPago());
+			mapaRolPago.put("tipocontratoId", tipoContratoId);
+			Collection<RolPagoIf> rolesExistentes = findRolPagoByQuery(mapaRolPago);
+			if ( rolesExistentes.size() == 0 ){
+				RolPagoIf rolPagoIf = new RolPagoEJB();
+				rolPagoIf.setTiporolId(rubroEventual.getTipoRolIdPago());
+				rolPagoIf.setTipocontratoId(tipoContratoId);
+				rolPagoIf.setFecha(new Date(new java.util.Date().getTime()));
+				rolPagoIf.setMes(mes);
+				rolPagoIf.setAnio(anio);
+				rolPagoIf.setEstado( EstadoRolPago.getLetraEstadoRolPago(EstadoRolPago.GENERADO) );
+				RolPagoIf rp = addRolPago(rolPagoIf);
+				return rp;
+			} else if ( rolesExistentes.size() == 1 ){
+				RolPagoIf rp = rolesExistentes.iterator().next();
+				return rp;
+			} else {
+				throw new GenericBusinessException("Existe mas de un rol de Pago con la misma Informacion !!! Llamar servicio Técnico !!");
+			}
+		}
+		return null;
+	}
+	
+	private RolPagoDetalleIf registrarRubroEventual(RolPagoIf rolPagoIf,
+			Long contratoId, RubroEventualIf rubroEventual,BigDecimal total,String estado) throws GenericBusinessException {
+		RolPagoDetalleIf rolPagoDetalleIf =  new RolPagoDetalleData();
+		rolPagoDetalleIf.setRolpagoId(rolPagoIf.getId());
+		rolPagoDetalleIf.setContratoId(contratoId);
+		rolPagoDetalleIf.setEstado(estado);
+		rolPagoDetalleIf.setRubroEventualId(rubroEventual.getId());
+		rolPagoDetalleIf.setValor(total);
+		rolPagoDetalleIf.setObservacion(rubroEventual.getObservacion());
+		return rolPagoDetalleIf;
+	}
+	
+	@TransactionAttribute(TransactionAttributeType.REQUIRED)
+	public void eliminarRolPago(RolPagoIf rolPagoIf) throws GenericBusinessException{
+
+		try {
+			//ELIMAR REGISTROS EXISTENTES
+			Collection<RolPagoDetalleEJB> detalles = rolPagoDetalleLocal.findRolPagoDetalleByRolpagoId(rolPagoIf.getId()); 
+			for ( RolPagoDetalleEJB detalle : detalles ){
+				rolPagoDetalleLocal.deleteRolPagoDetalle(detalle.getId());
+			}
+			deleteRolPago(rolPagoIf.getId());
+
+		} catch(Exception ex ){
+			ctx.setRollbackOnly();
+			ex.printStackTrace();
+			throw new GenericBusinessException("Error al eliminar Rol de Pago !!");
+		}
+
+	}
+	
+	@TransactionAttribute(TransactionAttributeType.REQUIRED)
+	public void eliminarRolPagoPorContrato(RolPagoIf rolPagoIf,ContratoIf contratoIf) throws GenericBusinessException{
+
+		try {
+			//ELIMAR REGISTROS EXISTENTES
+			Map<String, Object> mapaEliminacion = new HashMap<String, Object>();
+			mapaEliminacion.put("rolpagoId", rolPagoIf.getId());
+			mapaEliminacion.put("contratoId", contratoIf.getId());
+			mapaEliminacion.put("estado", EstadoRolPagoDetalle.EMITIDO.getLetra() );
+			Collection<RolPagoDetalleEJB> detalles = rolPagoDetalleLocal.findRolPagoDetalleByQuery(mapaEliminacion); 
+			for ( RolPagoDetalleEJB detalle : detalles ){
+				rolPagoDetalleLocal.deleteRolPagoDetalle(detalle.getId());
+			}
+			deleteRolPago(rolPagoIf.getId());
+
+		} catch(Exception ex ){
+			ctx.setRollbackOnly();
+			ex.printStackTrace();
+			throw new GenericBusinessException("Error al eliminar Rol de Pago !!");
+		}
+
+	}
+	
+	public void eliminarRubroEventual(Long rubroEventualId) throws GenericBusinessException{
+		
+		RubroEventualIf rubroEventualIf = rubroEventualLocal.getRubroEventual(rubroEventualId);
+		if ( EstadoRubroEventual.EMITIDO.getLetra().equals( rubroEventualIf.getEstado() ) ){
+			rubroEventualLocal.deleteRubroEventual(rubroEventualIf.getId());
+			Collection<RolPagoDetalleIf> detalles = rolPagoDetalleLocal.findRolPagoDetalleByRubroEventualId(rubroEventualIf.getId());
+			if ( detalles.size() == 1 ){
+				RolPagoDetalleIf rpd = detalles.iterator().next(); 
+				if ( EstadoRolPagoDetalle.EMITIDO.getLetra().equals( rpd.getEstado() ) ){
+					rolPagoDetalleLocal.deleteRolPagoDetalle(rpd.getId());
+				} else {
+					throw new GenericBusinessException("No se puede eliminar Rubro Eventual, ya ha sido Autorizado o Pagado en el Rol de Pago !!"); 
+				}
+				
+			} else if ( detalles.size() > 1 ){
+				throw new GenericBusinessException("Error en la eliminacion de Rubro Eventual, está suplicado en Rol Detalle !!");
+			}
+		} else {
+			throw new GenericBusinessException("No se puede eliminar Rubro Eventual, ya ha sido Autorizado o Pagado !!");
+		}
+		
+	}
+	
+	/*********************** RESULTADOS POR TIPO DE ROL ******************************/
+	
+	public Collection<Map<String, Object>> crearColeccionContratos(Collection<Long> contratosId,RolPagoIf rolPagoIf,String estado, boolean devolverRolPagoDetalleId) throws GenericBusinessException{
+		
+		TipoRolIf tipoRolIf = tipoRolLocal.getTipoRol(rolPagoIf.getTiporolId());
+		TipoRol tipoRol = TipoRol.obtenerTipoRol(tipoRolIf);
+		if ( tipoRol == TipoRol.MENSUAL )
+			return crearColeccionContratosMensual(contratosId, rolPagoIf, tipoRolIf, tipoRol,estado,devolverRolPagoDetalleId);
+		else if ( tipoRol == TipoRol.QUINCENAL )
+			return crearColeccionContratosQuincenal(contratosId, rolPagoIf, tipoRolIf, tipoRol,estado,devolverRolPagoDetalleId);
+		else if ( tipoRol == TipoRol.APORTE_PATRONAL || tipoRol == TipoRol.FONDO_RESERVA )
+			return crearColeccionAportePatronalFondoReserva(contratosId,rolPagoIf,devolverRolPagoDetalleId);
+		else if ( tipoRol == TipoRol.DECIMO_TERCERO ||tipoRol == TipoRol.DECIMO_CUARTO || tipoRol == TipoRol.VACACIONES )
+			return crearColeccionContratosDecimos(contratosId,rolPagoIf,devolverRolPagoDetalleId);
+		return null;
+	}
+	
+	private Collection<Map<String, Object>> crearColeccionAportePatronalFondoReserva(Collection<Long> contratosId,RolPagoIf rolPagoIf, boolean devolverRolPagoDetalleId) throws GenericBusinessException{
+		
+		HashMap<Long, String> mapaContratoIdNombreEmpleado = new HashMap<Long, String>();
+		
+		Collection<Map<String, Object>> lista =  new ArrayList<Map<String, Object>>();
+		Map<String, Object> mapaConsulta = new HashMap<String, Object>();
+		mapaConsulta.put("rolpagoId", rolPagoIf.getId());
+		//Collection<RolPagoDetalleIf> rolPagoDetalles = rolPagoDetalleLocal.findRolPagoDetalleByRolpagoId(rolPagoIf.getId());
+		for (Long contratoId : contratosId){
+			
+			Collection<RolPagoDetalleIf> detallesRolPago = null;
+			if ( devolverRolPagoDetalleId )
+				detallesRolPago = new Vector<RolPagoDetalleIf>();
+			
+			mapaConsulta.put("contratoId", contratoId);
+			Map<String, Object> mapa = new HashMap<String, Object>();
+			Double total = 0.0;
+			Collection<RolPagoDetalleIf> rolPagoDetalles = rolPagoDetalleLocal.findRolPagoDetalleByQuery(mapaConsulta);
+			for ( RolPagoDetalleIf rolPagoDetalle : rolPagoDetalles ){
+				if ( devolverRolPagoDetalleId )
+					detallesRolPago.add(rolPagoDetalle);
+				
+				utilesLocal.verificarEmpleadoEnMapa(rolPagoDetalle,mapaContratoIdNombreEmpleado);
+				mapa.put("nombreEmpleado", mapaContratoIdNombreEmpleado.get(rolPagoDetalle.getContratoId()) );
+				Double valor = utilitariosLocal.redondeoValor( rolPagoDetalle.getValor().doubleValue() );
+				total += valor;
+			}
+			if ( devolverRolPagoDetalleId )
+				mapa.put("detallesRolPago", detallesRolPago);
+			mapa.put("contratoId", contratoId);
+			mapa.put("total",utilitariosLocal.redondeoValor(total));
+			lista.add(mapa);
+		}
+		Comparator<Map> comparadorMapaNombre = new Comparator<Map>(){
+			public int compare(Map o1, Map o2) {
+				String nombre1 = (String)o1.get("nombreEmpleado");
+				String nombre2 = (String)o2.get("nombreEmpleado");
+				return nombre1.compareTo(nombre2);
+			}
+		};
+		Collections.sort((ArrayList)lista, comparadorMapaNombre);
+		return lista;
+	}
+	
+	private Collection<Map<String, Object>> crearColeccionContratosDecimos(Collection<Long> contratosId,RolPagoIf rolPagoIf, boolean devolverRolPagoDetalleId) throws GenericBusinessException{
+		HashMap<Long, String> mapaContratoIdNombreEmpleado = new HashMap<Long, String>();
+		Collection<Map<String, Object>> lista =  new ArrayList<Map<String, Object>>();
+		Map<String, Object> mapaConsulta = new HashMap<String, Object>();
+		mapaConsulta.put("rolpagoId", rolPagoIf.getId());
+		for ( Long contratoId : contratosId ){
+			mapaConsulta.put("contratoId", contratoId);
+			//Collection<RolPagoDetalleIf> rolPagoDetalles = rolPagoDetalleLocal.findRolPagoDetalleByRolpagoId(rolPagoIf.getId());
+			Collection<RolPagoDetalleIf> rolPagoDetalles = rolPagoDetalleLocal.findRolPagoDetalleByQuery(mapaConsulta);
+			Double totalMeses = 0.0;
+			Map<String,Object> mapa =  new HashMap<String,Object>();
+			encerarValoresMeses(mapa);
+			
+			Collection<RolPagoDetalleIf> detallesRolPago = null;
+			if ( devolverRolPagoDetalleId )
+				detallesRolPago = new Vector<RolPagoDetalleIf>();
+			
+			for ( RolPagoDetalleIf rolPagoDetalle : rolPagoDetalles ){
+				if ( devolverRolPagoDetalleId )
+					detallesRolPago.add(rolPagoDetalle);
+				
+				utilesLocal.verificarEmpleadoEnMapa(rolPagoDetalle,mapaContratoIdNombreEmpleado);
+				if ( mapa.get("nombreEmpleado") == null )
+					mapa.put("nombreEmpleado", mapaContratoIdNombreEmpleado.get(rolPagoDetalle.getContratoId()));
+				String mes = rolPagoDetalle.getObservacion().split("-")[0];
+				Double valor = utilitariosLocal.redondeoValor(rolPagoDetalle.getValor().doubleValue());
+				mapa.put(mes,valor);
+				totalMeses += valor;
+	
+				if ( mapa.get("contratoId") == null )
+					mapa.put("contratoId", rolPagoDetalle.getContratoId());
+			}
+			if ( devolverRolPagoDetalleId )
+				mapa.put("detallesRolPago", detallesRolPago);
+			mapa.put("total", utilitariosLocal.redondeoValor(totalMeses));
+			lista.add(mapa);
+		}
+		Comparator<Map> comparadorMapaNombre = new Comparator<Map>(){
+			public int compare(Map o1, Map o2) {
+				String nombre1 = (String)o1.get("nombreEmpleado");
+				String nombre2 = (String)o2.get("nombreEmpleado");
+				return nombre1.compareTo(nombre2);
+			}
+		};
+		Collections.sort((ArrayList)lista,comparadorMapaNombre);
+		return lista;
+	}
+	
+	private void encerarValoresMeses(Map mapa){
+		for (String nombreMes : utilitariosLocal.getMesesMayusculas()){
+			mapa.put(nombreMes, 0.0);
+		}
+	}
+
+	private Collection<Map<String, Object>> crearColeccionContratosMensual(Collection<Long> contratosId
+			,RolPagoIf rolPagoIf,TipoRolIf tipoRolIf,TipoRol tipoRol,String estado, boolean devolverRolPagoDetalleId)
+	throws GenericBusinessException {
+		Double otrosIngresos = null;
+		Double totalIngresos = null;
+		Double otrosDescuentos = null;
+		Double totalDescuentos = null;
+		
+		HashMap<Long, String> mapaContratoIdNombreEmpleado = new HashMap<Long, String>();
+		HashMap<Long, RubroIf> mapaRubros = new HashMap<Long, RubroIf>();
+		HashMap<Long, String>mapaTipoRubros = new HashMap<Long, String>();
+		Collection rolPagoContratoCollection = new ArrayList();
+		
+		for ( Long contratoId : contratosId ){
+			Collection<RolPagoDetalleIf> rolPagoDetalles = buscarRolPagoDetalle(rolPagoIf, contratoId,tipoRol,estado);
+			Map<String, Object> mapa = new HashMap<String, Object>();
+			
+			otrosIngresos = 0.0; totalIngresos = 0.0;
+			otrosDescuentos = 0.0;totalDescuentos = 0.0;
+			mapa.put("otrosIngresos", otrosIngresos);
+			mapa.put("totalIngresos", totalIngresos);
+			mapa.put("otrosDescuentos", otrosDescuentos);
+			mapa.put("totalDescuentos", totalDescuentos);
+			
+			Collection<RolPagoDetalleIf> detallesRolPago = null;
+			if ( devolverRolPagoDetalleId )
+				detallesRolPago = new Vector<RolPagoDetalleIf>();
+			
+			inicializarValoresMapaMensual(mapa);
+			
+			ContabilizarRubrosNormales:
+			for ( RolPagoDetalleIf rolPagoDetalle : rolPagoDetalles ){
+				
+				utilesLocal.verificarEmpleadoEnMapa(rolPagoDetalle,mapaContratoIdNombreEmpleado);
+
+				Double valor = utilitariosLocal.redondeoValor(rolPagoDetalle.getValor().doubleValue());
+				mapa.put("nombreEmpleado", mapaContratoIdNombreEmpleado.get(rolPagoDetalle.getContratoId()));
+				mapa.put("cuentaBancariaId", rolPagoDetalle.getCuentaBancariaId());
+
+				Long idRubro = rolPagoDetalle.getRubroId();
+				//Long idRubroEventual = rolPagoDetalle.getRubroEventualId();
+				if ( idRubro!=null ){
+					RubroIf rubroIf = utilesLocal.verificarRubrosEnMapa(mapaRubros,mapaTipoRubros,idRubro);
+					
+					//No se toma en cuenta los normales 
+					if ( "A".equals(rubroIf.getTipoRubro()) || "P".equals(rubroIf.getTipoRubro()) )
+						continue ContabilizarRubrosNormales;
+					
+					if ( devolverRolPagoDetalleId )
+						detallesRolPago.add(rolPagoDetalle);
+						
+					String nombre = rubroIf.getNombre();
+					//String codigo = rubroIf.getCodigo();
+					if ( nombre.contains("SUELDO") ){
+						mapa.put("sueldo", valor);
+						totalIngresos += valor;
+					} else if ( nombre.contains("ANTICIPO") && nombre.contains("QUINCENA") ){
+						mapa.put("anticipoQuincena", valor);
+						totalDescuentos += valor;
+					} else if ( nombre.contains("APORTE") && nombre.contains("IESS") ) {
+						mapa.put("iess", valor);
+						totalDescuentos += valor;
+					} else if ( nombre.contains("IMPUESTO") && nombre.contains("RENTA") ) {
+						mapa.put("impuestoRenta", valor);
+						totalDescuentos += valor;
+					} else if ( nombre.contains("PRESTAMO") && nombre.contains("COMPA") ) {
+						mapa.put("prestamoCompania", valor);
+						totalDescuentos += valor;
+					} else {
+						calculoOtrosValores(valor, rubroIf,mapa,tipoRolIf);
+					}
+				} else {
+					/*if ( tipoRol == TipoRol.MENSUAL ){
+						RubroEventualIf rubroEventualIf = rubroEventualLocal.getRubroEventual(rolPagoDetalle.getRubroEventualId());
+						RubroIf rubroIf = utilesLocal.verificarRubrosEnMapa(mapaRubros,mapaTipoRubros,rubroEventualIf.getRubroId());
+						calculoOtrosValores(valor, rubroIf,mapa,tipoRolIf);
+						
+						if ( devolverRolPagoDetalleId )
+							detallesRolPago.add(rolPagoDetalle);
+					}*/
+				}
+			}
+
+			//RUBROS EVENTUALES
+			Map<String, Object> mapaEventual = new HashMap<String, Object>();
+			//parte de rolDetalle
+			//mapaEventual.put("rolpagoId", rolPagoIf.getId());
+			mapaEventual.put("contratoId", contratoId);
+			//parte de rubro Eventual
+			mapaEventual.put("tipoRolIdCobro", rolPagoIf.getTiporolId());
+			mapaEventual.put("mesCobro", rolPagoIf.getMes() );
+			mapaEventual.put("anioCobro", rolPagoIf.getAnio() );
+			mapaEventual.put("tipoContratoId", rolPagoIf.getTipocontratoId() );
+			//mapaEventual.put("estado", EstadoRolPagoDetalle.getLetraEstadoRolPagoDetalle(EstadoRolPagoDetalle.AUTORIZADO));
+			rolPagoDetalles = rolPagoDetalleLocal.findRolPagoDetalleEventualesByMapByEstados(mapaEventual
+					, EstadoRolPagoDetalle.EMITIDO.getLetra()
+					, EstadoRolPagoDetalle.AUTORIZADO.getLetra()
+					, EstadoRolPagoDetalle.PAGADO.getLetra() );
+			for ( RolPagoDetalleIf rolPagoDetalle : rolPagoDetalles ){
+				if ( devolverRolPagoDetalleId )
+					detallesRolPago.add(rolPagoDetalle);
+				if ( !mapa.containsKey("nombreEmpleado") )
+					mapa.put("nombreEmpleado", mapaContratoIdNombreEmpleado.get(rolPagoDetalle.getContratoId()));
+				Long idRubroEventual = rolPagoDetalle.getRubroEventualId();
+				Double valor = utilitariosLocal.redondeoValor(rolPagoDetalle.getValor().doubleValue());
+				RubroEventualIf rubroEventualIf = rubroEventualLocal.getRubroEventual(idRubroEventual);
+				RubroIf rubroIf = utilesLocal.verificarRubrosEnMapa(mapaRubros,mapaTipoRubros,rubroEventualIf.getRubroId());
+				calculoOtrosValores(valor,rubroIf,mapa,tipoRolIf);
+			}
+			
+			//Si es el calculo mensual, voy a buscar los descuentos que se hicieron en la quincena
+			//para tomarlos en cuenta en el calculo final.
+			if ( tipoRol == TipoRol.MENSUAL ){
+
+				Collection<TipoRolIf> tiposRolPago = tipoRolLocal.getTipoRolList();
+				TipoRolIf tipoRolQuincenal = buscarTipoRolIf(tiposRolPago, "QUINCENA");
+				
+				/*Map<String, Object> mapaRolPago = new HashMap<String, Object>();
+				mapaRolPago.put("tiporolId", tipoRolQuincenal.getId());
+				mapaRolPago.put("tipocontratoId", rolPagoIf.getTipocontratoId());
+				mapaRolPago.put("mes", rolPagoIf.getMes());
+				mapaRolPago.put("anio", rolPagoIf.getAnio());
+				Collection<RolPagoIf> rolPagoQuincenales = findRolPagoByQuery(mapaRolPago);
+				
+				RolPagoIf rolPagoQuincenal = null;
+				for (RolPagoIf rolPagoQuincenalTmp : rolPagoQuincenales){
+					rolPagoQuincenal = rolPagoQuincenalTmp;
+				}
+				
+				if ( rolPagoQuincenal == null ){
+					throw new GenericBusinessException("No existe rol de Pago Quincenal generado !!");
+				}*/
+				
+				mapaEventual = new HashMap<String, Object>();
+				//parte de rolDetalle
+				//mapaEventual.put("rolpagoId", rolPagoQuincenal.getId());
+				mapaEventual.put("contratoId", contratoId);
+				mapaEventual.put("rubroEventualId", " not null ");
+				//parte de rubro Eventual
+				mapaEventual.put("tipoRolIdCobro", tipoRolQuincenal.getId());
+				mapaEventual.put("mesCobro", rolPagoIf.getMes() );
+				mapaEventual.put("anioCobro", rolPagoIf.getAnio() );
+				mapaEventual.put("tipoContratoId", rolPagoIf.getTipocontratoId() );
+				//mapaEventual.put("estado", EstadoRolPagoDetalle.getLetraEstadoRolPagoDetalle(EstadoRolPagoDetalle.AUTORIZADO));
+				rolPagoDetalles = rolPagoDetalleLocal.findRolPagoDetalleEventualesByMapByEstados(mapaEventual
+						, EstadoRolPagoDetalle.EMITIDO.getLetra()
+						, EstadoRolPagoDetalle.AUTORIZADO.getLetra()
+						, EstadoRolPagoDetalle.PAGADO.getLetra() );
+				for ( RolPagoDetalleIf rolPagoDetalle : rolPagoDetalles ){
+					if ( devolverRolPagoDetalleId )
+						detallesRolPago.add(rolPagoDetalle);
+					if ( !mapa.containsKey("nombreEmpleado") )
+						mapa.put("nombreEmpleado", mapaContratoIdNombreEmpleado.get(rolPagoDetalle.getContratoId()));
+					Long idRubroEventual = rolPagoDetalle.getRubroEventualId();
+					Double valor = utilitariosLocal.redondeoValor(rolPagoDetalle.getValor().doubleValue());
+					RubroEventualIf rubroEventualIf = rubroEventualLocal.getRubroEventual(idRubroEventual);
+					RubroIf rubroIf = utilesLocal.verificarRubrosEnMapa(mapaRubros,mapaTipoRubros,rubroEventualIf.getRubroId());
+					calculoOtrosValores(valor,rubroIf,mapa,tipoRolIf);
+				}
+			}
+
+			if ( devolverRolPagoDetalleId )
+				mapa.put("detallesRolPago", detallesRolPago);
+			
+			mapa.put("contratoId", contratoId);
+			
+			otrosIngresos = (Double) mapa.get("otrosIngresos") + otrosIngresos;
+			mapa.put("otrosIngresos", otrosIngresos);
+			totalIngresos = (Double) mapa.get("totalIngresos") + totalIngresos;
+			mapa.put("totalIngresos", totalIngresos);
+			otrosDescuentos = (Double) mapa.get("otrosDescuentos") + otrosDescuentos;
+			mapa.put("otrosDescuentos", otrosDescuentos);
+			totalDescuentos = (Double) mapa.get("totalDescuentos") + totalDescuentos;
+			mapa.put("totalDescuentos", totalDescuentos);
+			Double total = utilitariosLocal.redondeoValor(totalIngresos-totalDescuentos);
+			mapa.put("netoPagar", total);
+
+			rolPagoContratoCollection.add(mapa);
+		}
+		
+		Comparator<Map> comparadorMapaNombre = new Comparator<Map>(){
+			public int compare(Map o1, Map o2) {
+				String nombre1 = (String)o1.get("nombreEmpleado");
+				String nombre2 = (String)o2.get("nombreEmpleado");
+				return nombre1.compareTo(nombre2);
+			}
+		};
+		
+		mapaContratoIdNombreEmpleado = null;
+		mapaRubros = null;
+		mapaTipoRubros = null;
+		Collections.sort((ArrayList)rolPagoContratoCollection,comparadorMapaNombre);
+		return rolPagoContratoCollection;
+	}
+
+	private void inicializarValoresMapaMensual(Map<String, Object> mapa){
+		mapa.put("sueldo",new Double(0.0));
+		mapa.put("otrosIngresos",new Double(0.0));
+		mapa.put("totalIngresos",new Double(0.0));
+		mapa.put("iess",new Double(0.0));
+		mapa.put("impuestoRenta",new Double(0.0));
+		mapa.put("prestamoCompania",new Double(0.0));
+		mapa.put("anticipoQuincena",new Double(0.0));
+		mapa.put("otrosDescuentos",new Double(0.0));
+		mapa.put("totalDescuentos",new Double(0.0));
+		mapa.put("netoPagar",new Double(0.0));
+	}
+
+	private void calculoOtrosValores(Double valor, RubroIf rubroIf,Map<String, Object> mapa,TipoRolIf tipoRolIf) throws GenericBusinessException {
+		Double otrosIngresos = (Double)mapa.get("otrosIngresos");
+		Double totalIngresos = (Double)mapa.get("totalIngresos");
+		Double otrosDescuentos = (Double)mapa.get("otrosDescuentos");
+		Double totalDescuentos = (Double)mapa.get("totalDescuentos");
+		
+		OperacionNomina ingresoEgreso = utilesLocal.getIngresoEgreso(tipoRolIf, rubroIf);
+		if ( ingresoEgreso == OperacionNomina.INGRESO ){
+			otrosIngresos += valor;
+			totalIngresos += valor;
+		} else{
+			otrosDescuentos += valor;
+			totalDescuentos += valor;
+		}
+		
+		mapa.put("otrosIngresos",otrosIngresos);
+		mapa.put("totalIngresos",totalIngresos);
+		mapa.put("otrosDescuentos",otrosDescuentos);
+		mapa.put("totalDescuentos",totalDescuentos);
+	}
+	
+	private Collection<Map<String, Object>> crearColeccionContratosQuincenal(Collection<Long> contratosId
+			,RolPagoIf rolPagoIf,TipoRolIf tipoRolIf,TipoRol tipoRol,String estado, boolean devolverRolPagoDetalleId)
+	throws GenericBusinessException {
+		Double otrosIngresos = null;
+		Double totalIngresos = null;
+		Double otrosDescuentos = null;
+		Double totalDescuentos = null;
+		
+		HashMap<Long, String> mapaContratoIdNombreEmpleado = new HashMap<Long, String>();
+		HashMap<Long, RubroIf> mapaRubros = new HashMap<Long, RubroIf>();
+		HashMap<Long, String> mapaTipoRubros = new HashMap<Long, String>();
+		Collection rolPagoContratoCollection = new ArrayList();
+		
+		Map<String,Object> mapaSueldo = new HashMap<String, Object>();
+		mapaSueldo.put("nombre", "SUELDO%BASICO%");
+		Collection<RubroIf> rubros = rubroLocal.findRubroByQuery(mapaSueldo);
+		if ( rubros.size() == 0 )
+			throw new GenericBusinessException("No existe Rubro con el nombre de Sueldo");
+		if ( rubros.size() > 1 )
+			throw new GenericBusinessException("Existe mas de un Rubro con el nombre Sueldo Basico !!");
+		RubroIf rubroSueldo = rubros.iterator().next();
+
+		for ( Long contratoId : contratosId ){
+			Collection<RolPagoDetalleIf> rolPagoDetalles = buscarRolPagoDetalle(rolPagoIf,contratoId,tipoRol,estado);
+			if ( rolPagoDetalles.size() > 0 ){
+				Map<String, Object> mapa = new HashMap<String, Object>();
+				
+				otrosIngresos = 0.0; totalIngresos = 0.0;
+				otrosDescuentos = 0.0; totalDescuentos = 0.0;
+				mapa.put("otrosIngresos", otrosIngresos);
+				mapa.put("totalIngresos", totalIngresos);
+				mapa.put("otrosDescuentos", otrosDescuentos);
+				mapa.put("totalDescuentos", totalDescuentos);
+				
+				Collection<RolPagoDetalleIf> detallesRolPago = null;
+				if ( devolverRolPagoDetalleId )
+					detallesRolPago = new Vector<RolPagoDetalleIf>();
+				
+				inicializarValoresMapaQuincenal(mapa);
+				
+				//RUBROS NORMALES
+				ContabilizarRubrosNormales:
+				for ( RolPagoDetalleIf rolPagoDetalle : rolPagoDetalles ){
+					
+					utilesLocal.verificarEmpleadoEnMapa(rolPagoDetalle,mapaContratoIdNombreEmpleado);
+					Double valor = utilitariosLocal.redondeoValor(rolPagoDetalle.getValor().doubleValue());
+					if ( !mapa.containsKey("nombreEmpleado") )
+						mapa.put("nombreEmpleado", mapaContratoIdNombreEmpleado.get(rolPagoDetalle.getContratoId()));
+	
+					mapa.put("cuentaBancariaId", rolPagoDetalle.getCuentaBancariaId());
+					
+					Long idRubro = rolPagoDetalle.getRubroId();
+					//Long idRubroEventual = rolPagoDetalle.getRubroEventualId();
+					if ( idRubro!=null ){
+						RubroIf rubroIf = utilesLocal.verificarRubrosEnMapa(mapaRubros,mapaTipoRubros,idRubro);
+						
+						//Di es de tipo Anticipo el rubro, no se lo toma en cuenta.
+						if ( "A".equals(rubroIf.getTipoRubro()) )
+							continue ContabilizarRubrosNormales;
+						
+						if ( devolverRolPagoDetalleId )
+							detallesRolPago.add(rolPagoDetalle);
+						
+						String nombre = rubroIf.getNombre();
+						if ( nombre.contains("ANTICIPO") && nombre.contains("QUINCENA") ){
+							mapa.put("anticipoQuincena", valor);
+							totalIngresos += valor;
+						} else {
+							calculoOtrosValores(valor, rubroIf,mapa,tipoRolIf);
+						}
+					} /*else {
+						RubroEventualIf rubroEventualIf = rubroEventualLocal.getRubroEventual(idRubroEventual);
+						RubroIf rubroIf = utilesLocal.verificarRubrosEnMapa(mapaRubros,mapaTipoRubros,rubroEventualIf.getRubroId());
+						calculoOtrosValores(valor,rubroIf,mapa,tipoRolIf);
+					}*/
+				}
+				
+				//RUBROS EVENTUALES
+				Map<String, Object> mapaEventual = new HashMap<String, Object>();
+				//parte rol detalle
+				mapaEventual.put("rolpagoId", rolPagoIf.getId());
+				mapaEventual.put("contratoId", contratoId);
+				//parte de rubro Eventual
+				mapaEventual.put("tipoRolIdCobro", rolPagoIf.getTiporolId());
+				mapaEventual.put("mesCobro", rolPagoIf.getMes() );
+				mapaEventual.put("anioCobro", rolPagoIf.getAnio() );
+				mapaEventual.put("tipoContratoId", rolPagoIf.getTipocontratoId() );
+				//mapaEventual.put("estado", EstadoRolPagoDetalle.getLetraEstadoRolPagoDetalle(EstadoRolPagoDetalle.AUTORIZADO));
+				rolPagoDetalles = rolPagoDetalleLocal.findRolPagoDetalleEventualesByMapByEstados(mapaEventual
+						, EstadoRolPagoDetalle.EMITIDO.getLetra(), EstadoRolPagoDetalle.AUTORIZADO.getLetra()
+						, EstadoRolPagoDetalle.PAGADO.getLetra() );
+						//, EstadoRolPagoDetalle.getLetraEstadoRolPagoDetalle(EstadoRolPagoDetalle.EMITIDO)
+						//, EstadoRolPagoDetalle.getLetraEstadoRolPagoDetalle(EstadoRolPagoDetalle.AUTORIZADO)
+						//, EstadoRolPagoDetalle.getLetraEstadoRolPagoDetalle(EstadoRolPagoDetalle.PAGADO) );
+				for ( RolPagoDetalleIf rolPagoDetalle : rolPagoDetalles ){
+					if ( devolverRolPagoDetalleId )
+						detallesRolPago.add(rolPagoDetalle);
+					if ( !mapa.containsKey("nombreEmpleado") )
+						mapa.put("nombreEmpleado", mapaContratoIdNombreEmpleado.get(rolPagoDetalle.getContratoId()));
+					Long idRubroEventual = rolPagoDetalle.getRubroEventualId();
+					Double valor = utilitariosLocal.redondeoValor(rolPagoDetalle.getValor().doubleValue());
+					RubroEventualIf rubroEventualIf = rubroEventualLocal.getRubroEventual(idRubroEventual);
+					RubroIf rubroIf = utilesLocal.verificarRubrosEnMapa(mapaRubros,mapaTipoRubros,rubroEventualIf.getRubroId());
+					calculoOtrosValores(valor,rubroIf,mapa,tipoRolIf);
+				}
+				
+				if ( devolverRolPagoDetalleId )
+					mapa.put("detallesRolPago", detallesRolPago);
+				
+				Double valorSueldo = getValorSueldo(contratoId, rubroSueldo,mapaContratoIdNombreEmpleado);
+				mapa.put("sueldo", valorSueldo);
+				
+				mapa.put("contratoId", contratoId);
+				totalIngresos = (Double) mapa.get("totalIngresos") + totalIngresos;
+				mapa.put("totalIngresos",totalIngresos);
+				totalDescuentos = (Double) mapa.get("totalDescuentos") + totalDescuentos;
+				mapa.put("totalDescuentos",totalDescuentos);
+				otrosDescuentos = (Double) mapa.get("otrosDescuentos") + otrosDescuentos;
+				mapa.put("otrosDescuentos",otrosDescuentos);
+				Double total = utilitariosLocal.redondeoValor(totalIngresos-otrosDescuentos);
+				mapa.put("netoPagar", total);
+	
+				rolPagoContratoCollection.add(mapa);
+			}
+		}
+		
+		Comparator<Map> comparadorMapaNombre = new Comparator<Map>(){
+			public int compare(Map o1, Map o2) {
+				String nombre1 = (String)o1.get("nombreEmpleado");
+				String nombre2 = (String)o2.get("nombreEmpleado");
+				return nombre1.compareTo(nombre2);
+			}
+		};
+		
+		mapaContratoIdNombreEmpleado = null;
+		mapaRubros = null;
+		mapaTipoRubros = null;
+		Collections.sort((ArrayList)rolPagoContratoCollection,comparadorMapaNombre);
+		return rolPagoContratoCollection;
+	}
+	
+	private void inicializarValoresMapaQuincenal(Map<String, Object> mapa){
+		mapa.put("sueldo",new Double(0.0));
+		mapa.put("otrosIngresos",new Double(0.0));
+		mapa.put("totalIngresos",new Double(0.0));
+		mapa.put("anticipoQuincena",new Double(0.0));
+		mapa.put("otrosDescuentos",new Double(0.0));
+		mapa.put("totalDescuentos",new Double(0.0));
+		mapa.put("netoPagar",new Double(0.0));
+	}
+	
+	private Double getValorSueldo( Long contratoId,RubroIf rubroSueldo,HashMap<Long, String> mapaContratoIdNombreEmpleado) throws GenericBusinessException{
+		Map<String, Object> mapa = new HashMap<String, Object>();
+		mapa.put("contratoId", contratoId);
+		mapa.put("rubroId", rubroSueldo.getId());
+		Collection<ContratoRubroIf> contratoRubros = contratoRubroLocal.findContratoRubroByQuery(mapa);
+		if ( contratoRubros.size() == 0 ){
+			String nombreEmpleado = mapaContratoIdNombreEmpleado.get(contratoId);
+			throw new GenericBusinessException("Contrato de "+nombreEmpleado+" no tiene Rubro Sueldo");
+		} else if ( contratoRubros.size() > 1 ){
+			String nombreEmpleado = mapaContratoIdNombreEmpleado.get(contratoId);
+			throw new GenericBusinessException("Contrato de "+nombreEmpleado+" tiene mas de un Rubro de Sueldo Básico");
+		}
+		ContratoRubroIf contratoRubro = contratoRubros.iterator().next();
+		Double valorSueldo = utilitariosLocal.redondeoValor( contratoRubro.getValor().doubleValue() );
+		return valorSueldo;
+	}
+	
+	private Collection<RolPagoDetalleIf> buscarRolPagoDetalle(RolPagoIf rolPago
+			,Long contratoId,TipoRol tipoRol,String estado)
+	throws GenericBusinessException {
+		//OJO
+		//SI SE MODIFICA ESTE METODO, REVISAR EN PAGO_ROL_DETALLE_SESSION_SERVICE EL METODO findRolPagoDetalleContratoIdByRolpagoIdNormal
+		Map<String, Object> mapaDetalle = new HashMap<String, Object>();
+		mapaDetalle.put("rolpagoId", rolPago.getId());
+		mapaDetalle.put("contratoId", contratoId);
+		if ( estado!=null )
+			mapaDetalle.put("estado", estado);
+		Collection<RolPagoDetalleIf> rolPagoDetalleCollection = null;
+		if ( tipoRol == TipoRol.DECIMO_TERCERO || tipoRol == TipoRol.DECIMO_CUARTO 
+			 || tipoRol == TipoRol.APORTE_PATRONAL || tipoRol == TipoRol.FONDO_RESERVA ){
+			rolPagoDetalleCollection = rolPagoDetalleLocal.findRolPagoDetalleByRolpagoId(rolPago.getId());
+		}else if ( tipoRol == TipoRol.QUINCENAL || tipoRol == TipoRol.MENSUAL )
+			rolPagoDetalleCollection = rolPagoDetalleLocal.findRolPagoDetalleByQueryNormal(mapaDetalle);
+
+		//if ( rolPagoDetalleCollection== null || rolPagoDetalleCollection.size() == 0 )
+		//	throw new GenericBusinessException("Rol de Pago no tiene detalle !!");
+		return rolPagoDetalleCollection;
+	}
+	
+	@TransactionAttribute(TransactionAttributeType.REQUIRED)
+	public void autorizarRolPago(Date fecha,RolPagoIf rolPagoIf,Collection<Map<String,Object>> rolPagoDetalleSeleccionadosList) throws GenericBusinessException{
+		try{
+			TipoRolIf tipoRolIf = tipoRolLocal.getTipoRol(rolPagoIf.getTiporolId());
+			TipoRol tipoRol = TipoRol.obtenerTipoRol(tipoRolIf);
+			
+			Collection<DatoAsientoMensual> chequesCollection = new ArrayList<DatoAsientoMensual>();
+			Collection<DatoAsientoMensual> nominaCollection = new ArrayList<DatoAsientoMensual>();
+			
+			for ( Map<String,Object> mapa : rolPagoDetalleSeleccionadosList ){
+				DatoAsientoMensual dato = new DatoAsientoMensual();
+				TipoPagoIf tipoPago = (TipoPagoIf) mapa.get("tipoPagoIf");
+				CuentaBancariaIf cuentaBancaria = (CuentaBancariaIf) mapa.get("cuentaBancariaIf");
+				String descripcionAnticipo = (String) mapa.get("descripcionAnticipo");
+				String numeroCheque = (String) mapa.get("numeroCheque");
+				String nombreEmpleado = (String) mapa.get("nombreEmpleado");
+				dato.setNombre(nombreEmpleado);
+				Collection<RolPagoDetalleIf> detallesRolPago = (Collection<RolPagoDetalleIf>) mapa.get("rolPagoDetalleCollection");
+				dato.setRolPagoDetalleCollection(detallesRolPago);
+				if ( tipoPago.getNombre().contains("CHEQUE") )
+					chequesCollection.add(dato);
+				else
+					nominaCollection.add(dato);
+				
+				for ( RolPagoDetalleIf detalleTmp : detallesRolPago ){
+	
+					
+					RolPagoDetalleIf detalle = rolPagoDetalleLocal.getRolPagoDetalle(detalleTmp.getId());
+					if ( detalle.getEstado().equals( EstadoRolPagoDetalle.EMITIDO.getLetra() ) ){
+	
+						if ( detalle.getRubroEventualId() != null ){
+							RubroEventualIf rubroEventualIf = rubroEventualLocal.getRubroEventual(detalle.getRubroEventualId());
+							rubroEventualIf.setEstado(EstadoRubroEventual.AUTORIZADO_PARCIAL.getLetra());
+							//Si es que en rubro_eventual NO tiene fecha y tipo rol de pago significa que NO emite cheque
+							//lo que significa que los datos usados para la autorizacion seran puestos en el rol_pago_detalle
+							//para estos eventuales.
+							if ( rubroEventualIf.getTipoRolIdPago()==null && rubroEventualIf.getFechaPago()==null ){
+								detalle.setTipoPagoId(tipoPago.getId());
+								detalle.setCuentaBancariaId(cuentaBancaria.getId());
+								if ( numeroCheque != null )
+									detalle.setPreimpreso(numeroCheque);
+							}
+						} else {
+							detalle.setTipoPagoId(tipoPago.getId());
+							detalle.setCuentaBancariaId(cuentaBancaria.getId());
+							if ( numeroCheque != null )
+								detalle.setPreimpreso(numeroCheque);
+						}
+						detalle.setEstado(EstadoRolPagoDetalle.AUTORIZADO.getLetra());
+						detalle.setObservacion(descripcionAnticipo!=null?descripcionAnticipo:detalle.getObservacion());
+						//sumaDetalle = sumarIngresos(tipoRolIf, sumaDetalle,mapaRubro, detalle);
+					}
+				}
+				//sumaDetalle = utilitariosLocal.redondeoValor(sumaDetalle);
+			}
+			
+			if ( tipoRol == TipoRol.QUINCENAL ){
+				
+			} else if ( tipoRol == TipoRol.MENSUAL ){
+				
+				Collection<TipoRolIf> tiposRolPago = tipoRolLocal.getTipoRolList();
+				TipoRolIf tipoRolQuincenal = null;
+				RolPagoIf rolPagoQuincena = null;
+				//Si el Tipo Rol es mensual, se busca el detalle del Rol Quincenal
+				//para que puedan hacerse los calculos de totales con estos, puesto
+				//que se descuentan para el pago del mes. 
+				if ( tipoRol == TipoRol.MENSUAL ){
+					tipoRolQuincenal = buscarTipoRolIf(tiposRolPago, "QUINCENA");
+					Map<String, Object> mapaRolQuincena = new HashMap<String, Object>();
+					mapaRolQuincena.put("tiporolId", tipoRolQuincenal.getId());
+					mapaRolQuincena.put("tipocontratoId", rolPagoIf.getTipocontratoId());
+					mapaRolQuincena.put("mes", rolPagoIf.getMes());
+					mapaRolQuincena.put("anio", rolPagoIf.getAnio());
+					Collection<RolPagoIf> rolesQuincena = findRolPagoByQuery(mapaRolQuincena);
+					for ( RolPagoIf rpq : rolesQuincena){
+						rolPagoQuincena = rpq;
+					}
+				}
+				
+				//GENERACION DEL ASIENTO MENSUAL
+				/*Collection<AsientoIf> asientosGenerados = rolPagoAsientoAutomaticoHandlerLocal
+					.generarAsientoAutomaticoAutorizacionMensual(fecha,rolPagoIf, chequesCollection
+						, nominaCollection,rolPagoQuincena);
+				
+				verificarSumaAsientosAutorizacionRolMensual(rolPagoIf, tipoRolIf,asientosGenerados
+						, chequesCollection, nominaCollection,0D);*/
+				
+			} else if ( tipoRol == TipoRol.APORTE_PATRONAL || tipoRol == TipoRol.FONDO_RESERVA ){ 
+				
+				//RubroIf rubroFondoReserva = utilesLocal.getRubroByTipoRol(TipoRol.FONDO_RESERVA);
+				//RubroIf rubroAportePatronal = utilesLocal.getRubroByTipoRol(TipoRol.APORTE_PATRONAL);
+				
+				double debe = 0D,haber = 0D;
+				Map<String, Object> mapaRolDetalle = new HashMap<String, Object>();
+				mapaRolDetalle.put("rolpagoId", rolPagoIf.getId());
+				mapaRolDetalle.put("estado", EstadoRolPagoDetalle.AUTORIZADO.getLetra() );
+				if ( tipoRol == TipoRol.APORTE_PATRONAL ){
+					//APORTE AL IESS PATRONAL
+					//mapaRolDetalle.put("rubroId", rubroAportePatronal.getId());
+					Collection<RolPagoDetalleIf> rolPagoDetalleAportePatronal = rolPagoDetalleLocal.findRolPagoDetalleByQuery(mapaRolDetalle);
+					double totalAportes = 0D;
+				
+					for ( RolPagoDetalleIf rpd : rolPagoDetalleAportePatronal ){
+						totalAportes += rpd.getValor().doubleValue();
+					}
+					totalAportes = utilitariosLocal.redondeoValor(totalAportes);
+					AsientoIf asientoAportaPatronal = rolPagoAsientoAutomaticoHandlerLocal.generarAsientoAutomaticoProvisionAporteIessPatronal(fecha,rolPagoIf, rolPagoDetalleAportePatronal,tipoRolIf.getEmpresaId());
+					Collection<AsientoDetalleIf> asientoDetalles = asientoDetalleLocal.findAsientoDetalleByAsientoId(asientoAportaPatronal.getId());
+					for ( AsientoDetalleIf asientoDetalleIf : asientoDetalles ){
+						debe += asientoDetalleIf.getDebe().doubleValue();
+						haber += asientoDetalleIf.getHaber().doubleValue();
+					}
+					debe = utilitariosLocal.redondeoValor(debe);
+					haber = utilitariosLocal.redondeoValor(haber);
+					if ( debe!=haber )
+						throw new GenericBusinessException("Valores de Debe y haber para Aporte Patronal no coinciden !!");
+					if ( debe!=totalAportes )
+						throw new GenericBusinessException("El valor total no coincide con debe y haber de Aporte Patronal  !!");
+				} else if ( tipoRol == TipoRol.FONDO_RESERVA ){
+					//FONDO DE RESERVA
+					//mapaRolDetalle.put("rubroId", rubroFondoReserva.getId());
+					Collection<RolPagoDetalleIf> rolPagoDetalleFondoReserva = rolPagoDetalleLocal.findRolPagoDetalleByQuery(mapaRolDetalle);
+					double totalFondo = 0D;
+					for (RolPagoDetalleIf rpd : rolPagoDetalleFondoReserva ){
+						totalFondo += rpd.getValor().doubleValue();
+					}
+					totalFondo = utilitariosLocal.redondeoValor(totalFondo);
+					AsientoIf asientoFondoReserva = rolPagoAsientoAutomaticoHandlerLocal.generarAsientoAutomaticoProvisionFondoReserva(fecha,rolPagoIf, rolPagoDetalleFondoReserva,tipoRolIf.getEmpresaId());
+					debe = 0D;haber = 0D;
+					Collection<AsientoDetalleIf> asientoDetalles = asientoDetalleLocal.findAsientoDetalleByAsientoId(asientoFondoReserva.getId());
+					for ( AsientoDetalleIf asientoDetalleIf : asientoDetalles ){
+						debe += asientoDetalleIf.getDebe().doubleValue();
+						haber += asientoDetalleIf.getHaber().doubleValue();
+					}
+					debe = utilitariosLocal.redondeoValor(debe);
+					haber = utilitariosLocal.redondeoValor(haber);
+					if ( debe!=haber )
+						throw new GenericBusinessException("Valores de Debe y haber para Fondo de Reserva no coinciden !!");
+					if ( debe!=totalFondo )
+						throw new GenericBusinessException("El valor total no coincide con debe y haber de Fondo de Reserva  !!");
+				}
+				
+			} else if ( tipoRol == TipoRol.DECIMO_TERCERO || tipoRol == TipoRol.DECIMO_CUARTO ){
+				
+				double debe = 0D,haber = 0D;
+				Map<String, Object> mapaRolDetalle = new HashMap<String, Object>();
+				mapaRolDetalle.put("rolpagoId", rolPagoIf.getId());
+				mapaRolDetalle.put("estado", EstadoRolPagoDetalle.AUTORIZADO.getLetra() );
+				
+				Collection<RolPagoDetalleIf> detalleDecimo = rolPagoDetalleLocal.findRolPagoDetalleByRolpagoId(rolPagoIf.getId());
+				double totalDecimo = 0D;
+				for (RolPagoDetalleIf rpd : detalleDecimo ){
+					totalDecimo += rpd.getValor().doubleValue();
+				}
+				AsientoIf asientoFondoReserva = rolPagoAsientoAutomaticoHandlerLocal.generarAsientoAutomaticoProvisionDecimos(fecha,rolPagoIf,detalleDecimo, tipoRolIf, tipoRol);
+				debe = 0D;haber = 0D;
+				Collection<AsientoDetalleIf> asientoDetalles = asientoDetalleLocal.findAsientoDetalleByAsientoId(asientoFondoReserva.getId());
+				for ( AsientoDetalleIf asientoDetalleIf : asientoDetalles ){
+					debe += asientoDetalleIf.getDebe().doubleValue();
+					haber += asientoDetalleIf.getHaber().doubleValue();
+				}
+				debe = utilitariosLocal.redondeoValor(debe);
+				haber = utilitariosLocal.redondeoValor(haber);
+				if ( debe!=haber )
+					throw new GenericBusinessException("Valores de Debe y haber para Fondo de Reserva no coinciden !!");
+				if ( debe!=totalDecimo )
+					throw new GenericBusinessException("El valor total no coincide con debe y haber de Fondo de Reserva  !!");
+			
+				
+			} else if( tipoRol == TipoRol.VACACIONES ){
+				double debe = 0D,haber = 0D;
+				Map<String, Object> mapaRolDetalle = new HashMap<String, Object>();
+				mapaRolDetalle.put("rolpagoId", rolPagoIf.getId());
+				mapaRolDetalle.put("estado", EstadoRolPagoDetalle.AUTORIZADO.getLetra() );
+				Collection<RolPagoDetalleIf> rolPagoDetalleVacaciones = rolPagoDetalleLocal.findRolPagoDetalleByQuery(mapaRolDetalle);
+				double totalAportes = 0D;
+			
+				for ( RolPagoDetalleIf rpd : rolPagoDetalleVacaciones ){
+					totalAportes += rpd.getValor().doubleValue();
+				}
+				totalAportes = utilitariosLocal.redondeoValor(totalAportes);
+				AsientoIf asientoVacaciones = rolPagoAsientoAutomaticoHandlerLocal.generarAsientoAutomaticoProvisionVacaciones(fecha,rolPagoIf, rolPagoDetalleVacaciones,tipoRolIf.getEmpresaId());
+				Collection<AsientoDetalleIf> asientoDetalles = asientoDetalleLocal.findAsientoDetalleByAsientoId(asientoVacaciones.getId());
+				for ( AsientoDetalleIf asientoDetalleIf : asientoDetalles ){
+					debe += asientoDetalleIf.getDebe().doubleValue();
+					haber += asientoDetalleIf.getHaber().doubleValue();
+				}
+				debe = utilitariosLocal.redondeoValor(debe);
+				haber = utilitariosLocal.redondeoValor(haber);
+				if ( debe!=haber )
+					throw new GenericBusinessException("Valores de Debe y haber para Aporte Patronal no coinciden !!");
+				if ( debe!=totalAportes )
+					throw new GenericBusinessException("El valor total no coincide con debe y haber de Aporte Patronal  !!");
+			
+			} else 
+				throw new GenericBusinessException("Generacion de Asientos para autorizacion de "+tipoRol.toString()+" no implementada !!");
+			
+		} catch( GenericBusinessException e ){
+			e.printStackTrace();
+			ctx.setRollbackOnly();
+			throw new GenericBusinessException(e.getMessage());
+		} catch( Exception e){
+			e.printStackTrace();
+			ctx.setRollbackOnly();
+			throw new GenericBusinessException("Error al autorizar los pagos !!");
+		}
+	}
+	
+	public void generarAsientoRolPago(Date fecha,RolPagoIf rolPagoIf,Collection<Map<String,Object>> rolPagoDetalleSeleccionadosList) throws GenericBusinessException{
+		try{
+			TipoRolIf tipoRolIf = tipoRolLocal.getTipoRol(rolPagoIf.getTiporolId());
+			TipoRol tipoRol = TipoRol.obtenerTipoRol(tipoRolIf);
+			
+			Collection<DatoAsientoMensual> chequesCollection = new ArrayList<DatoAsientoMensual>();
+			Collection<DatoAsientoMensual> nominaCollection = new ArrayList<DatoAsientoMensual>();
+			
+			for ( Map<String,Object> mapa : rolPagoDetalleSeleccionadosList ){
+				DatoAsientoMensual dato = new DatoAsientoMensual();
+				TipoPagoIf tipoPago = (TipoPagoIf) mapa.get("tipoPagoIf");
+				String nombreEmpleado = (String) mapa.get("nombreEmpleado");
+				dato.setNombre(nombreEmpleado);
+				Collection<RolPagoDetalleIf> detallesRolPago = (Collection<RolPagoDetalleIf>) mapa.get("rolPagoDetalleCollection");
+				dato.setRolPagoDetalleCollection(detallesRolPago);
+				if ( tipoPago.getNombre().contains("CHEQUE") )
+					chequesCollection.add(dato);
+				else
+					nominaCollection.add(dato);
+				
+			}
+			
+			if ( tipoRol == TipoRol.QUINCENAL ){
+				
+			} else if ( tipoRol == TipoRol.MENSUAL ){
+				
+				Collection<TipoRolIf> tiposRolPago = tipoRolLocal.getTipoRolList();
+				TipoRolIf tipoRolQuincenal = null;
+				RolPagoIf rolPagoQuincena = null;
+				//Si el Tipo Rol es mensual, se busca el detalle del Rol Quincenal
+				//para que puedan hacerse los calculos de totales con estos, puesto
+				//que se descuentan para el pago del mes. 
+				if ( tipoRol == TipoRol.MENSUAL ){
+					tipoRolQuincenal = buscarTipoRolIf(tiposRolPago, "QUINCENA");
+					Map<String, Object> mapaRolQuincena = new HashMap<String, Object>();
+					mapaRolQuincena.put("tiporolId", tipoRolQuincenal.getId());
+					mapaRolQuincena.put("tipocontratoId", rolPagoIf.getTipocontratoId());
+					mapaRolQuincena.put("mes", rolPagoIf.getMes());
+					mapaRolQuincena.put("anio", rolPagoIf.getAnio());
+					Collection<RolPagoIf> rolesQuincena = findRolPagoByQuery(mapaRolQuincena);
+					for ( RolPagoIf rpq : rolesQuincena){
+						rolPagoQuincena = rpq;
+					}
+				}
+				
+				//GENERACION DEL ASIENTO MENSUAL
+				Collection<AsientoIf> asientosGenerados = rolPagoAsientoAutomaticoHandlerLocal
+					.generarAsientoAutomaticoAutorizacionMensual(fecha,rolPagoIf, chequesCollection
+						, nominaCollection,rolPagoQuincena);
+				
+				
+				
+				verificarSumaAsientosAutorizacionRolMensual(rolPagoIf, tipoRolIf,asientosGenerados
+						, chequesCollection, nominaCollection,0D);
+				
+			}
+		} catch (GenericBusinessException e){
+			e.printStackTrace();
+			ctx.setRollbackOnly();
+			throw new GenericBusinessException(e.getMessage());
+		} catch( Exception e){
+			e.printStackTrace();
+			ctx.setRollbackOnly();
+			throw new GenericBusinessException("Error al generar asiento de Rol de Pago !!");
+		}
+	}
+	
+	@TransactionAttribute(TransactionAttributeType.REQUIRED)
+	public void generarAsientoRubrosEventales(Date fechaPago,RolPagoIf rolPagoIf,Collection<Map<String,Object>> rolPagoDetalleSeleccionadosList) throws GenericBusinessException{
+		try{
+			
+			TipoRolIf tipoRolIf = tipoRolLocal.getTipoRol(rolPagoIf.getTiporolId());
+			Collection<DatoAsientoPagoRol> chequesCollection = new ArrayList<DatoAsientoPagoRol>();
+			Collection<DatoAsientoPagoRol> nominaCollection = new ArrayList<DatoAsientoPagoRol>();
+			double sumaDetalle = 0.0;  
+			
+			Map<Long,ContratoIf> mapaContratos = new HashMap<Long,ContratoIf>();
+			Map<Long,EmpleadoIf> mapaEmpleados =  new HashMap<Long,EmpleadoIf>();
+			
+			for ( Map<String,Object> mapa : rolPagoDetalleSeleccionadosList ){
+				
+				TipoPagoIf tipoPagoIf = (TipoPagoIf) mapa.get("tipoPagoIf");
+				//Long cuentaBancariaId = (Long) mapa.get("cuentaBancariaId");
+				//String numeroCheque = (String) mapa.get("numeroCheque");
+				//String nombreBeneficiario = (String) mapa.get("beneficiario");
+				Double total = (Double) mapa.get("total");
+				String nombreRubro = (String) mapa.get("nombreRubro");
+				
+				DatoAsientoRubroEventual dato = new DatoAsientoRubroEventual();
+				dato.setTotal(total);
+				
+				Collection<RolPagoDetalleIf> detallesRolPago = (Collection<RolPagoDetalleIf>) mapa.get("rolPagoDetalleCollection");
+				
+				dato.setDetalle(detallesRolPago);
+				dato.setNombreRubro(nombreRubro);
+				
+				
+				sumaDetalle += total;
+				
+				Collection<AsientoIf> asientosGenerados = rolPagoAsientoAutomaticoHandlerLocal
+					.generarAsientoAutomaticoAutorizacionAnticipos(
+							fechaPago,rolPagoIf,dato,mapaContratos,mapaEmpleados);
+				
+				
+			}
+			
+			
+			
+			
+		} catch( GenericBusinessException e ){
+			e.printStackTrace();
+			ctx.setRollbackOnly();
+			throw new GenericBusinessException(e.getMessage());
+		} catch( Exception e){
+			e.printStackTrace();
+			ctx.setRollbackOnly();
+			throw new GenericBusinessException("Error al autorizar los pagos !!");
+		}
+	}	
+	
+	private void verificarSumaAsientosPagoRolMensual(RolPagoIf rolPagoIf,
+			TipoRolIf tipoRolIf,Collection<AsientoIf> asientosGenerados,
+			Collection<DatoAsientoPagoRol> chequesCollection,
+			Collection<DatoAsientoPagoRol> nominaCollection
+			, double sumaDetalle)
+			throws GenericBusinessException {
+		
+		double debe = 0.0;
+		double haber = 0.0;
+		for ( AsientoIf asiento : asientosGenerados ){
+			
+			Collection<AsientoDetalleIf> asientosDetalle = asientoDetalleLocal.findAsientoDetalleByAsientoId(asiento.getId());
+			for ( Iterator itAsientos = asientosDetalle.iterator() ; itAsientos.hasNext() ; ){
+				AsientoDetalleIf asientoDetalle = (AsientoDetalleIf) itAsientos.next();
+				debe += asientoDetalle.getDebe().doubleValue();
+				haber += asientoDetalle.getHaber().doubleValue();
+			}
+			debe = utilitariosLocal.redondeoValor(debe);
+			haber = utilitariosLocal.redondeoValor(haber);
+			if ( debe != haber )
+				throw new GenericBusinessException("Error al guardar "+tipoRolIf.getNombre()+", el valor del Debe y Haber no coinciden en el Asiento");
+		}
+		if ( sumaDetalle > 0D && debe != sumaDetalle )
+			throw new GenericBusinessException("Error al guardar "+tipoRolIf.getNombre()+", el valor del Debe y Haber no coinciden con el detalle del Rol");
+	}
+
+	private void verificarSumaAsientosAutorizacionRolMensual(RolPagoIf rolPagoIf,
+			TipoRolIf tipoRolIf,Collection<AsientoIf> asientosGenerados,
+			Collection<DatoAsientoMensual> chequesCollection,
+			Collection<DatoAsientoMensual> nominaCollection
+			, double sumaDetalle)
+			throws GenericBusinessException {
+		
+		double debe = 0.0;
+		double haber = 0.0;
+		for ( AsientoIf asiento : asientosGenerados ){
+			debe = 0.0;
+			haber = 0.0;
+			Collection<AsientoDetalleIf> asientosDetalle = asientoDetalleLocal.findAsientoDetalleByAsientoId(asiento.getId());
+			for ( Iterator itAsientos = asientosDetalle.iterator() ; itAsientos.hasNext() ; ){
+				AsientoDetalleIf asientoDetalle = (AsientoDetalleIf) itAsientos.next();
+				debe += asientoDetalle.getDebe().doubleValue();
+				haber += asientoDetalle.getHaber().doubleValue();
+			}
+			debe = utilitariosLocal.redondeoValor(debe);
+			haber = utilitariosLocal.redondeoValor(haber);
+			if ( debe != haber )
+				throw new GenericBusinessException("Error al guardar "+tipoRolIf.getNombre()+", el valor del Debe y Haber no coinciden en el Asiento");
+		}
+		if ( sumaDetalle > 0D && debe != sumaDetalle )
+			throw new GenericBusinessException("Error al guardar "+tipoRolIf.getNombre()+", el valor del Debe y Haber no coinciden con el detalle del Rol");
+	}
+
+	private double inicializarSumaDetalleMensual(RolPagoIf rolPagoIf,
+			TipoRolIf tipoRolIf, double sumaDetalle,
+			Map<Long, RubroIf> mapaRubro) throws GenericBusinessException {
+		Map<String, Object> mapaDetalleMensual = new HashMap<String, Object>();
+		mapaDetalleMensual.put("rolpagoId", rolPagoIf.getId());
+		Collection<RolPagoDetalleIf> detalles = rolPagoDetalleLocal.findRolPagoDetalleByQueryByEstados(mapaDetalleMensual
+				,EstadoRolPagoDetalle.AUTORIZADO.getLetra()
+				,EstadoRolPagoDetalle.PAGADO.getLetra() );
+		for ( RolPagoDetalleIf rolPagoDetalleIf : detalles ){
+			sumaDetalle = sumarIngresos(tipoRolIf, sumaDetalle, mapaRubro, rolPagoDetalleIf);
+		}
+		return sumaDetalle;
+	}
+
+	private double sumarIngresos(TipoRolIf tipoRolIf, double sumaDetalle,
+			Map<Long, RubroIf> mapaRubro, RolPagoDetalleIf detalle)
+			throws GenericBusinessException {
+		RubroIf rubroIf = null;
+		if ( detalle.getRubroId() != null )
+			rubroIf = verificarRubro(mapaRubro, detalle.getRubroId());
+		else {
+			RubroEventualIf rubroEventual = rubroEventualLocal.getRubroEventual(detalle.getRubroEventualId());
+			rubroIf = verificarRubro(mapaRubro, rubroEventual.getRubroId());
+		}
+		OperacionNomina operacion = utilesLocal.getIngresoEgreso(tipoRolIf, rubroIf);
+		if ( operacion == OperacionNomina.INGRESO )
+			sumaDetalle += detalle.getValor().doubleValue();
+		return sumaDetalle;
+	}
+	
+	@TransactionAttribute(TransactionAttributeType.REQUIRED)
+	public void procesarPagoRol(Date fechaPago,RolPagoIf rolPagoIf,Collection<Map<String,Object>> rolPagoDetalleSeleccionadosList) throws GenericBusinessException{
+		try{
+			TipoRolIf tipoRolIf = tipoRolLocal.getTipoRol(rolPagoIf.getTiporolId());
+	
+			TipoRol tipoRol = TipoRol.obtenerTipoRol(tipoRolIf);
+			if ( tipoRol == null )
+				throw new GenericBusinessException("Manejo de Tipo de Rol no implementado !!");
+			
+			Collection<DatoAsientoPagoRol> chequesCollection = new ArrayList<DatoAsientoPagoRol>();
+			Collection<DatoAsientoPagoRol> nominaCollection = new ArrayList<DatoAsientoPagoRol>();
+			double sumaDetalle = 0.0;  
+			
+			if ( tipoRol == TipoRol.QUINCENAL ){
+				Map<String, ChequeDatos> mapaChequesEmitidos = new HashMap<String, ChequeDatos>();
+				
+				sumaDetalle = procesarPagoRolCalculo(fechaPago,rolPagoDetalleSeleccionadosList, chequesCollection,
+						nominaCollection);
+				
+				Collection<AsientoIf> asientosGenerados = rolPagoAsientoAutomaticoHandlerLocal.generarAsientoAutomaticoQuincenal(fechaPago,rolPagoIf, chequesCollection, nominaCollection,mapaChequesEmitidos);
+				
+				verificarSumaAsientosPagoRolQuincenal(rolPagoIf, tipoRolIf,asientosGenerados,chequesCollection
+					,nominaCollection, sumaDetalle);
+				
+				for ( String numeroCheque : mapaChequesEmitidos.keySet() ){
+					ChequeDatos ChequeDatos = mapaChequesEmitidos.get(numeroCheque);
+					ChequeEmitidoIf chequeEmitido = ChequeDatos.getChequeEmitido();
+					if ( chequeEmitido.getValor().doubleValue() > 0D )
+						chequeEmitidoLocal.procesarChequeEmitido(ChequeDatos);
+				}
+				
+			} else if ( tipoRol == TipoRol.MENSUAL ){
+				Map<String, ChequeDatos> mapaChequesEmitidos = new HashMap<String, ChequeDatos>();
+				
+				sumaDetalle = procesarPagoRolCalculo(fechaPago,rolPagoDetalleSeleccionadosList, chequesCollection,
+						nominaCollection);
+				
+				Collection<AsientoIf> asientosGenerados = rolPagoAsientoAutomaticoHandlerLocal.generarAsientoPagoMensual(fechaPago,rolPagoIf, chequesCollection, nominaCollection,mapaChequesEmitidos);
+				verificarSumaAsientosPagoRolMensual(rolPagoIf, tipoRolIf, asientosGenerados, chequesCollection, nominaCollection, sumaDetalle);
+				
+				for ( String numeroCheque : mapaChequesEmitidos.keySet() ){
+					ChequeDatos ChequeDatos = mapaChequesEmitidos.get(numeroCheque);
+					ChequeEmitidoIf chequeEmitido = ChequeDatos.getChequeEmitido();
+					if ( chequeEmitido.getValor().doubleValue() > 0D )
+						chequeEmitidoLocal.procesarChequeEmitido(ChequeDatos);
+				}
+			} else if ( tipoRol == TipoRol.DECIMO_TERCERO || tipoRol == TipoRol.DECIMO_CUARTO ){
+				Map<String, ChequeDatos> mapaChequesEmitidos = new HashMap<String, ChequeDatos>();
+				
+				sumaDetalle = procesarPagoRolCalculo(fechaPago,rolPagoDetalleSeleccionadosList, chequesCollection,
+						nominaCollection);
+				
+				Collection<AsientoIf> asientosGenerados = rolPagoAsientoAutomaticoHandlerLocal.generarAsientoPagoDecimos(fechaPago, rolPagoIf, chequesCollection, nominaCollection, mapaChequesEmitidos);
+				verificarSumaAsientosPagoRolMensual(rolPagoIf, tipoRolIf, asientosGenerados, chequesCollection, nominaCollection, sumaDetalle);
+				
+				for ( String numeroCheque : mapaChequesEmitidos.keySet() ){
+					ChequeDatos ChequeDatos = mapaChequesEmitidos.get(numeroCheque);
+					ChequeEmitidoIf chequeEmitido = ChequeDatos.getChequeEmitido();
+					if ( chequeEmitido.getValor().doubleValue() > 0D )
+						chequeEmitidoLocal.procesarChequeEmitido(ChequeDatos);
+				}
+			} else if ( tipoRol == TipoRol.FONDO_RESERVA || tipoRol == TipoRol.APORTE_PATRONAL ){
+				//throw new GenericBusinessException("Metodo no implementado");
+				
+				Map<String, ChequeDatos> mapaChequesEmitidos = new HashMap<String, ChequeDatos>();
+				
+				sumaDetalle = procesarPagoRolCalculo(fechaPago,rolPagoDetalleSeleccionadosList, chequesCollection,
+						nominaCollection);
+				
+				Collection<AsientoIf> asientosGenerados = null;
+				
+				if ( tipoRol == TipoRol.APORTE_PATRONAL )
+					asientosGenerados = rolPagoAsientoAutomaticoHandlerLocal.generarAsientoPagoAporteIessPatronal(fechaPago, rolPagoIf, chequesCollection, nominaCollection, mapaChequesEmitidos);
+				else if ( tipoRol == TipoRol.FONDO_RESERVA )
+					asientosGenerados = rolPagoAsientoAutomaticoHandlerLocal.generarAsientoPagoFondoReserva(fechaPago, rolPagoIf, chequesCollection, nominaCollection, mapaChequesEmitidos);
+				else 
+					throw new GenericBusinessException("Tipo de rol no considerado !!");
+				
+				verificarSumaAsientosPagoRolMensual(rolPagoIf, tipoRolIf, asientosGenerados, chequesCollection, nominaCollection, sumaDetalle);
+				
+				for ( String numeroCheque : mapaChequesEmitidos.keySet() ){
+					ChequeDatos ChequeDatos = mapaChequesEmitidos.get(numeroCheque);
+					ChequeEmitidoIf chequeEmitido = ChequeDatos.getChequeEmitido();
+					if ( chequeEmitido.getValor().doubleValue() > 0D )
+						chequeEmitidoLocal.procesarChequeEmitido(ChequeDatos);
+				}
+			} else if ( tipoRol == TipoRol.VACACIONES ){
+				Map<String, ChequeDatos> mapaChequesEmitidos = new HashMap<String, ChequeDatos>();
+				
+				sumaDetalle = procesarPagoRolCalculo(fechaPago,rolPagoDetalleSeleccionadosList, chequesCollection,
+						nominaCollection);
+				
+				Collection<AsientoIf> asientosGenerados = rolPagoAsientoAutomaticoHandlerLocal.generarAsientoPagoVacaciones(fechaPago, rolPagoIf, chequesCollection, nominaCollection, mapaChequesEmitidos);
+				verificarSumaAsientosPagoRolMensual(rolPagoIf, tipoRolIf, asientosGenerados, chequesCollection, nominaCollection, sumaDetalle);
+				
+				for ( String numeroCheque : mapaChequesEmitidos.keySet() ){
+					ChequeDatos ChequeDatos = mapaChequesEmitidos.get(numeroCheque);
+					ChequeEmitidoIf chequeEmitido = ChequeDatos.getChequeEmitido();
+					if ( chequeEmitido.getValor().doubleValue() > 0D )
+						chequeEmitidoLocal.procesarChequeEmitido(ChequeDatos);
+				}
+			}
+			else
+				throw new GenericBusinessException("Tipo de Rol no considerado para Pago");
+			
+		} catch( GenericBusinessException e){
+			ctx.setRollbackOnly();
+			e.printStackTrace();
+			throw new GenericBusinessException(e.getMessage());
+		} catch( Exception e ){
+			ctx.setRollbackOnly();
+			e.printStackTrace();
+			throw new GenericBusinessException("Error general en la creación de Pago !!");
+		}
+			
+	}
+	
+	@TransactionAttribute(TransactionAttributeType.REQUIRED)
+	public void procesarPagoAnticipoRol(Date fechaPago,RolPagoIf rolPagoIf,Collection<Map<String,Object>> rolPagoDetalleSeleccionadosList) throws GenericBusinessException{
+		try{
+			TipoRolIf tipoRolIf = tipoRolLocal.getTipoRol(rolPagoIf.getTiporolId());
+			Map<String, ChequeDatos> mapaChequesEmitidos = new HashMap<String, ChequeDatos>();
+			Map<Long, RubroIf> mapaRubros = new HashMap<Long, RubroIf>();
+			Collection<DatoAsientoPagoRol> chequesCollection = new ArrayList<DatoAsientoPagoRol>();
+			Collection<DatoAsientoPagoRol> nominaCollection = new ArrayList<DatoAsientoPagoRol>();
+			double sumaDetalle = 0.0;  
+			
+			sumaDetalle = procesarPagoAnticipoRolCalculo(
+				fechaPago, rolPagoDetalleSeleccionadosList,
+				chequesCollection, nominaCollection, mapaRubros);
+			
+			Collection<AsientoIf> asientosGenerados = rolPagoAsientoAutomaticoHandlerLocal
+				.generarAsientoAutomaticoAnticipos(fechaPago, rolPagoIf, chequesCollection, 
+					nominaCollection, mapaChequesEmitidos,mapaRubros );
+			
+			verificarSumaAsientosPagoRolMensual(rolPagoIf, tipoRolIf, asientosGenerados, chequesCollection, nominaCollection, sumaDetalle);
+			
+			for ( String numeroCheque : mapaChequesEmitidos.keySet() ){
+				ChequeDatos ChequeDatos = mapaChequesEmitidos.get(numeroCheque);
+				ChequeEmitidoIf chequeEmitido = ChequeDatos.getChequeEmitido();
+				if ( chequeEmitido.getValor().doubleValue() > 0D )
+					chequeEmitidoLocal.procesarChequeEmitido(ChequeDatos);
+			}
+		} catch( GenericBusinessException e ){
+			e.printStackTrace();
+			ctx.setRollbackOnly();
+			throw new GenericBusinessException(e.getMessage());
+		} catch( Exception e){
+			e.printStackTrace();
+			ctx.setRollbackOnly();
+			throw new GenericBusinessException("Error al autorizar los pagos !!");
+		}
+	}
+	
+	private double procesarPagoAnticipoRolCalculo(Date fechaPago,
+			Collection<Map<String, Object>> rolPagoDetalleSeleccionadosList,
+			Collection<DatoAsientoPagoRol> chequesCollection,
+			Collection<DatoAsientoPagoRol> nominaCollection,
+			Map<Long, RubroIf> mapaRubros) throws GenericBusinessException {
+
+		double sumaDetalle = 0.0;  
+		
+		for ( Map<String,Object> mapa : rolPagoDetalleSeleccionadosList ){
+			
+			TipoPagoIf tipoPagoIf = (TipoPagoIf) mapa.get("tipoPagoIf");
+			Long cuentaBancariaId = (Long) mapa.get("cuentaBancariaId");
+			String numeroCheque = (String) mapa.get("numeroCheque");
+			String nombreBeneficiario = (String) mapa.get("beneficiario");
+			Double total = (Double) mapa.get("total");
+			String nombreRubro = (String) mapa.get("nombreRubro");
+			
+			DatoAsientoPagoRol dato = new DatoAsientoPagoRol();
+			dato.setTotal(total);
+			dato.setNumeroCheque(numeroCheque);
+			dato.setNombreRubro(nombreRubro);
+			dato.setNombreEmpleado(nombreBeneficiario);
+			//Long cuentaDeCuentaBancaria = getCuentaDeCuentaBancaria(mapCuentaDeCuentaBancaria, cuentaBancariaId);
+			dato.setCuentaBancariaId(cuentaBancariaId);
+			
+			Collection<RolPagoDetalleIf> detallesRolPago = (Collection<RolPagoDetalleIf>) mapa.get("rolPagoDetalleCollection");
+			
+			for ( RolPagoDetalleIf detalleTmp : detallesRolPago ){
+				
+				RolPagoDetalleIf detalle = rolPagoDetalleLocal.getRolPagoDetalle(detalleTmp.getId());
+				boolean registrarDatosDeRubroEventual = false;
+				if ( detalle.getEstado().equals( EstadoRolPagoDetalle.AUTORIZADO.getLetra() ) ){
+
+					if ( detalle.getRubroEventualId() != null ){
+						RubroEventualIf rubroEventualIf = rubroEventualLocal.getRubroEventual(detalle.getRubroEventualId());
+						RubroIf rubroIf = verificarRubro(mapaRubros, rubroEventualIf.getRubroId());
+						dato.setRubroIf(rubroIf);
+						rubroEventualIf.setEstado(EstadoRubroEventual.PAGADO.getLetra());
+						//Si es que en rubro_eventual no tiene fecha ni tipo rol de pago significa que no emite cheque
+						//y en el rol de pago detalle se puede poner los datos que se ingresan ahi.
+						if ( rubroEventualIf.getTipoRolIdPago()==null && rubroEventualIf.getFechaPago()==null ){
+							//rubroEventualIf.setEstado(EstadoRubroEventual.getLetraEstadoRubroEventual(EstadoRubroEventual.PAGADO));
+							detalle.setTipoPagoId(tipoPagoIf.getId());
+							detalle.setCuentaBancariaId(cuentaBancariaId);
+							if ( numeroCheque != null && registrarDatosDeRubroEventual )
+								detalle.setPreimpreso(numeroCheque);
+						}
+					}else {
+						RubroIf rubroIf = verificarRubro(mapaRubros, detalle.getRubroId());
+						dato.setRubroIf(rubroIf);
+						detalle.setTipoPagoId(tipoPagoIf.getId());
+						detalle.setCuentaBancariaId(cuentaBancariaId);
+						if ( numeroCheque != null && registrarDatosDeRubroEventual )
+							detalle.setPreimpreso(numeroCheque);
+					}
+					if ( fechaPago!=null && detalle.getFechaPago()==null )
+						detalle.setFechaPago(fechaPago);
+					detalle.setEstado(EstadoRolPagoDetalle.PAGADO.getLetra() );
+				}
+			}
+			dato.setTotal(total);
+			if ( numeroCheque!= null && !"".equals(numeroCheque) )
+				dato.setNumeroCheque(numeroCheque);
+			
+			if ( tipoPagoIf.getNombre().contains("CHEQUE") ){
+				chequesCollection.add(dato);
+			} else{
+				nominaCollection.add(dato);
+			}
+			
+			sumaDetalle += total;
+		}
+		return utilitariosLocal.redondeoValor(sumaDetalle);
+	}
+	
+	@TransactionAttribute(TransactionAttributeType.REQUIRED)
+	public void autorizarAnticipoRolPago(Date fechaPago,RolPagoIf rolPagoIf,Collection<Map<String,Object>> rolPagoDetalleSeleccionadosList) throws GenericBusinessException{
+		try{
+			DecimalFormat formatoDosEnteros = new DecimalFormat("00");
+			ArrayList<RolPagoIf> rolesPagoCollection = new ArrayList<RolPagoIf>();
+			for ( Map<String,Object> mapa : rolPagoDetalleSeleccionadosList ){
+				TipoPagoIf tipoPago = (TipoPagoIf) mapa.get("tipoPagoIf");
+				CuentaBancariaIf cuentaBancaria = (CuentaBancariaIf) mapa.get("cuentaBancariaIf");
+				String numeroCheque = (String) mapa.get("numeroCheque");
+				//String nombreBeneficiario = (String) mapa.get("nombreBeneficiario");
+				Map<String, Object> mapaEventuales = new HashMap<String, Object>();
+				mapaEventuales.put("rolpagoId", rolPagoIf.getId());
+				
+				ArrayList<RubroEventualIf> rubrosEventuales = (ArrayList<RubroEventualIf>) mapa.get("rubroEventualCollection");
+				for( RubroEventualIf rubroEventual : rubrosEventuales ){
+					RolPagoDetalleIf rolPagoDetalle = null; 
+					Collection<RolPagoDetalleIf> rubroEventualeExistente = rolPagoDetalleLocal.findRolPagoDetalleByRubroEventualId(rubroEventual.getId());
+					if ( rubroEventualeExistente.size() > 1 ){
+						throw new GenericBusinessException("Error en la autorización del Pago, existen mas de un mismo Rubro Eventual registrado en el detalle del Rol !!");
+					}else if ( rubroEventualeExistente.size() == 1 ){
+						for ( RolPagoDetalleIf re : rubroEventualeExistente ){
+							rolPagoDetalle = re;
+							rolPagoDetalle.setEstado(EstadoRolPagoDetalle.AUTORIZADO.getLetra());
+						}
+					} else if ( rubroEventualeExistente.size() == 0 ){
+						//Lo que esta a continuacion se lo hace para que se ponga el rol de pago que le corresponde 
+						//al detalle que se va a registrar
+						//Se busca el contrato para sacar el tipo de contrato
+						ContratoIf contrato = contratoLocal.getContrato(rubroEventual.getContratoId());
+						//Se usa el tipo de contrato para sacar el rol de pago junto con los otros parametros
+						RolPagoIf rolPagoDeContrato = verificarRolPago(rolesPagoCollection,contrato.getTipocontratoId(),rubroEventual,formatoDosEnteros);
+						//rolPagoDetalle = registrarRubroEventual(rolPagoIf, rubroEventual.getContratoId()
+						rolPagoDetalle = registrarRubroEventual(rolPagoDeContrato, rubroEventual.getContratoId()
+							, rubroEventual , rubroEventual.getValor() 
+							,EstadoRolPagoDetalle.AUTORIZADO.getLetra() );
+					} 
+					rolPagoDetalle.setTipoPagoId(tipoPago.getId());
+					rolPagoDetalle.setCuentaBancariaId(cuentaBancaria.getId());
+					if (numeroCheque!=null)
+						rolPagoDetalle.setPreimpreso(numeroCheque);
+					
+					if ( rolPagoDetalle.getId() == null )
+						rolPagoDetalleLocal.addRolPagoDetalle(rolPagoDetalle);
+					else 
+						rolPagoDetalleLocal.saveRolPagoDetalle(rolPagoDetalle);
+					
+					//Se le cambia el estado al rubro eventual
+					rubroEventual.setEstado(EstadoRubroEventual.AUTORIZADO.getLetra());
+					rubroEventualLocal.saveRubroEventual(rubroEventual);
+				}
+				
+				/*Collection<RolPagoDetalleIf> detallesRolPago = 
+					rolPagoDetalleLocal.findRolPagoDetalleEventualesByMapByEstados(mapaEventuales,rubroId, EstadoRolPagoDetalle.getLetraEstadoRolPagoDetalle(EstadoRolPagoDetalle.EMITIDO) );
+				
+				for ( RolPagoDetalleIf detalleTmp : detallesRolPago ){
+	
+					RolPagoDetalleIf detalle = rolPagoDetalleLocal.getRolPagoDetalle(detalleTmp.getId());
+					if ( detalle.getEstado().equals( EstadoRolPagoDetalle.getLetraEstadoRolPagoDetalle(EstadoRolPagoDetalle.EMITIDO) ) ){
+	
+						if ( detalle.getRubroEventualId() != null ){
+							RubroEventualIf rubroEventualIf = rubroEventualLocal.getRubroEventual(detalle.getRubroEventualId());
+							rubroEventualIf.setEstado(EstadoRubroEventual.getLetraEstadoRubroEventual(EstadoRubroEventual.AUTORIZADO));
+						}
+	
+						detalle.setTipoPagoId(tipoPago.getId());
+						detalle.setCuentaBancariaId(cuentaBancaria.getId());
+						if ( numeroCheque != null )
+							detalle.setPreimpreso(numeroCheque);
+						detalle.setEstado(EstadoRolPagoDetalle.getLetraEstadoRolPagoDetalle(EstadoRolPagoDetalle.AUTORIZADO));
+						//detalle.setObservacion(descripcionAnticipo!=null?descripcionAnticipo:detalle.getObservacion());
+						//sumaDetalle = sumarIngresos(tipoRolIf, sumaDetalle,mapaRubro, detalle);
+					}
+				}*/
+			}
+			
+		} catch( GenericBusinessException e ){
+			e.printStackTrace();
+			ctx.setRollbackOnly();
+			throw new GenericBusinessException(e.getMessage());
+		} catch( Exception e){
+			e.printStackTrace();
+			ctx.setRollbackOnly();
+			throw new GenericBusinessException("Error al autorizar los pagos !!");
+		}
+	}
+	
+	
+	private RolPagoIf verificarRolPago(Set<RolPagoIf> setRolPago,String mes, String anio, Long tipoRolPagoId,Long tipoContratoId) throws GenericBusinessException{
+		RolPagoIf rolPago = null;
+		for ( RolPagoIf rp : setRolPago ){
+			if ( rp.getMes().equals(mes) && rp.getAnio().equals(anio) 
+				 && rp.getTipocontratoId().equals(tipoContratoId) && rp.getTiporolId().equals(tipoRolPagoId) )
+				return rp;
+		}
+		Map<String,Object> mapa = new HashMap<String,Object>();
+		mapa.put("mes",mes);
+		mapa.put("anio",anio);
+		mapa.put("tiporolId",tipoRolPagoId);
+		mapa.put("tipocontratoId",tipoContratoId);
+		Collection<RolPagoIf> roles = findRolPagoByQuery(mapa);
+		if ( roles.size() == 1 )
+			rolPago = roles.iterator().next();
+		else if ( roles.size() == 0 )
+			throw new GenericBusinessException("No existe Rol de Pago con los pametros indicados para la creacion de Rubro Eventual !!");
+		else if ( roles.size() > 1 )
+			throw new GenericBusinessException("Existe mas de un Rol de Pago con los pametros indicados para la creacion de Rubro Eventual !!");
+		return rolPago;
+	}
+	
+	private void verificarSumaAsientosPagoAnticipos(RolPagoIf rolPagoIf,
+			TipoRolIf tipoRolIf,Collection<AsientoIf> asientosGenerados,
+			DatoAsientoPagoRol dato) throws GenericBusinessException {
+		
+		double debe = 0.0; double haber = 0.0;
+		
+		for ( AsientoIf asiento : asientosGenerados ){
+			
+			Collection<AsientoDetalleIf> asientosDetalle = asientoDetalleLocal.findAsientoDetalleByAsientoId(asiento.getId());
+			for ( Iterator itAsientos = asientosDetalle.iterator() ; itAsientos.hasNext() ; ){
+				AsientoDetalleIf asientoDetalle = (AsientoDetalleIf) itAsientos.next();
+				debe += asientoDetalle.getDebe().doubleValue();
+				haber += asientoDetalle.getHaber().doubleValue();
+			}
+			debe = utilitariosLocal.redondeoValor(debe);
+			haber = utilitariosLocal.redondeoValor(haber);
+			if ( debe != haber )
+				throw new GenericBusinessException("Error al guardar "+tipoRolIf.getNombre()+", el valor del Debe y Haber no coinciden en el Asiento");
+		}
+		if (  debe != dato.getTotal() )
+			throw new GenericBusinessException("Error al guardar "+tipoRolIf.getNombre()+", el valor del Debe y Haber no coinciden con el detalle del Rol");
+	}
+	
+	private void verificarSumaAsientosPagoRolQuincenal(RolPagoIf rolPagoIf,
+			TipoRolIf tipoRolIf,Collection<AsientoIf> asientosGenerados,
+			Collection<DatoAsientoPagoRol> chequesCollection,
+			Collection<DatoAsientoPagoRol> nominaCollection,
+			double sumaDetalle) throws GenericBusinessException {
+		
+		double debe = 0.0; double haber = 0.0;
+		
+		/*DocumentoIf documentoIf = documentoLocal.getDocumento(tipoRolIf.getDocumentoId());
+		TipoDocumentoIf tipoDocumentoIf = tipoDocumentoLocal.getTipoDocumento(documentoIf.getTipodocumentoId());
+		Map<String, Object> mapaAsientos =  new HashMap<String, Object>();
+		mapaAsientos.put("tipoDocumentoId",tipoDocumentoIf.getId());
+		mapaAsientos.put("transaccionId",rolPagoIf.getId());
+		Collection<AsientoIf> asientosExistentes = asientoLocal.findAsientoByQuery(mapaAsientos);
+		for ( AsientoIf asientoIf : asientosExistentes ){
+			Collection<AsientoDetalleIf> asientosDetalles = asientoDetalleLocal.findAsientoDetalleByAsientoId(asientoIf.getId());
+			for ( AsientoDetalleIf asientoDetalleIf : asientosDetalles ){
+				debe += asientoDetalleIf.getDebe().doubleValue();
+				haber += asientoDetalleIf.getHaber().doubleValue();
+			}
+		}
+		debe = utilitariosLocal.redondeoValor(debe);
+		haber = utilitariosLocal.redondeoValor(haber);*/
+		
+		for ( AsientoIf asiento : asientosGenerados ){
+			
+			Collection<AsientoDetalleIf> asientosDetalle = asientoDetalleLocal.findAsientoDetalleByAsientoId(asiento.getId());
+			for ( Iterator itAsientos = asientosDetalle.iterator() ; itAsientos.hasNext() ; ){
+				AsientoDetalleIf asientoDetalle = (AsientoDetalleIf) itAsientos.next();
+				debe += asientoDetalle.getDebe().doubleValue();
+				haber += asientoDetalle.getHaber().doubleValue();
+			}
+			debe = utilitariosLocal.redondeoValor(debe);
+			haber = utilitariosLocal.redondeoValor(haber);
+			if ( debe != haber )
+				throw new GenericBusinessException("Error al guardar "+tipoRolIf.getNombre()+", el valor del Debe y Haber no coinciden en el Asiento");
+		}
+		//if ( debe != haber )
+		//	throw new GenericBusinessException("Error al guardar "+tipoRolIf.getNombre()+", el valor del Debe y Haber no coinciden en el Asiento");
+		if (  debe != sumaDetalle )
+			throw new GenericBusinessException("Error al guardar "+tipoRolIf.getNombre()+", el valor del Debe y Haber no coinciden con el detalle del Rol");
+	}
+
+	private double procesarPagoRolCalculo(Date fechaPago,
+			Collection<Map<String, Object>> rolPagoDetalleSeleccionadosList,
+			Collection<DatoAsientoPagoRol> chequesCollection,
+			Collection<DatoAsientoPagoRol> nominaCollection) throws GenericBusinessException {
+
+		double sumaDetalle = 0.0;  
+		Map<Long, RubroIf> mapaRubros = new HashMap<Long, RubroIf>();
+		
+		for ( Map<String,Object> mapa : rolPagoDetalleSeleccionadosList ){
+			
+			String numeroCheque = (String)mapa.get("numeroCheque");
+			Double total = (Double) mapa.get("total");
+			boolean contratoIdVerificado = false;
+			DatoAsientoPagoRol dato = new DatoAsientoPagoRol();
+			TipoPagoIf tipoPagoIf = (TipoPagoIf) mapa.get("tipoPagoIf");
+			String nombre = null;
+			if ( mapa.get("beneficiario") != null )
+				nombre = (String)mapa.get("beneficiario");
+			else if ( (String)mapa.get("nombre") != null )
+				nombre = (String)mapa.get("nombre");
+			else 
+				throw new GenericBusinessException("Nombre no establecido !!");
+			dato.setNombreEmpleado(nombre);
+			Long cuentaBancariaId = (Long) mapa.get("cuentaBancariaId");
+			dato.setCuentaBancariaId(cuentaBancariaId);
+			//Map<Long, DatoRubroEventual> mapaRubroEventuales =  new HashMap<Long, DatoRubroEventual>();
+			Collection<RolPagoDetalleIf> detallesRolPago = (Collection<RolPagoDetalleIf>) mapa.get("rolPagoDetalleCollection");
+			for ( RolPagoDetalleIf detalleTmp : detallesRolPago ){
+				try {
+					RolPagoDetalleIf detalle = rolPagoDetalleLocal.getRolPagoDetalle(detalleTmp.getId());
+					if ( detalle.getRubroId()!=null ){
+						//Se establecen datos en RolPagoDetalle
+						if ( fechaPago!= null && detalle.getFechaPago()==null )
+							detalle.setFechaPago(fechaPago);
+						if (!contratoIdVerificado){
+							dato.setContratId(detalle.getContratoId());
+							contratoIdVerificado = true;
+						}
+						if ( detalle.getEstado().equals( EstadoRolPagoDetalle.AUTORIZADO.getLetra() ) ){
+							detalle.setEstado(EstadoRolPagoDetalle.PAGADO.getLetra() );
+						}
+						if ( fechaPago!=null && detalle.getFechaPago()==null )
+							detalle.setFechaPago(fechaPago);
+						if ( numeroCheque!= null && !"".equals(numeroCheque) ){
+							detalle.setPreimpreso(numeroCheque);
+						}
+					} else if ( detalle.getRubroEventualId() != null 
+							&& detalle.getEstado().equals(EstadoRubroEventual.AUTORIZADO.getLetra()) ){
+						RubroEventualIf rubroEnventual = rubroEventualLocal.getRubroEventual(detalle.getRubroEventualId());
+						//Si el rubroEventuale no tiene fecha de pago se lo toma en cuenta
+						//porque quiere decir que no se emitio cheque o no se hizo debito con este.
+						if ( rubroEnventual.getFechaPago() == null  ){
+							//Se establecen datos en RolPagoDetalle para Rubros Eventuales
+							dato.setEventual(true);
+							detalle.setEstado(EstadoRolPagoDetalle.PAGADO.getLetra() );
+							if ( fechaPago!= null && detalle.getFechaPago()==null )
+								detalle.setFechaPago(fechaPago);
+							if (!contratoIdVerificado){
+								dato.setContratId(detalle.getContratoId());
+								contratoIdVerificado = true;
+							}
+							if ( fechaPago!=null && detalle.getFechaPago()==null )
+								detalle.setFechaPago(fechaPago);
+							if ( numeroCheque!= null && !"".equals(numeroCheque) ){
+								detalle.setPreimpreso(numeroCheque);
+							}
+							//Se establecen los datos que faltan en RubroEventual.
+							rubroEnventual.setFechaPago(fechaPago);
+							rubroEnventual.setTipoRolIdPago(rubroEnventual.getTipoRolIdCobro());
+							rubroEnventual.setEstado( EstadoRubroEventual.PAGADO.getLetra() );
+							
+							//VERIFICAR SI EN RUBRO EVENTUAL TIENE EVENTO CONTABLE , SI TIENE HAY QUE
+							//SACARLO DE LA LISTA Y AGRUPARLO EN OTRA LISTA PARA PODER PONERLO
+							//CON LA PLANTILLA QUE LE CORRESPONDE
+						}
+					}
+				} catch (GenericBusinessException e) {
+					e.printStackTrace();
+				}
+			}
+			//if ( mapaRubroEventuales.size() > 0 )
+			//	dato.setMapaRubroEventuales(mapaRubroEventuales);
+			
+			dato.setTotal(total);
+			if ( numeroCheque!= null && !"".equals(numeroCheque) )
+				dato.setNumeroCheque(numeroCheque);
+			
+			if ( tipoPagoIf.getNombre().contains("CHEQUE") ){
+				chequesCollection.add(dato);
+			} else{
+				nominaCollection.add(dato);
+			}
+			
+			sumaDetalle += total;
+		}
+		return utilitariosLocal.redondeoValor(sumaDetalle);
+	}
+	
+	private void registrarRubroEventualEnMapa(RolPagoDetalleIf detalle,Double total,Map<Long, RubroIf> mapaRubros,Map<Long, DatoRubroEventual> mapaRubroEventuales) throws GenericBusinessException{
+		RubroEventualIf rubroEventual = rubroEventualLocal.getRubroEventual(detalle.getRubroEventualId());
+		RubroIf rubro = verificarRubro(mapaRubros, rubroEventual.getRubroId());
+		
+		if ( !mapaRubroEventuales.containsKey(rubro.getId()) ){
+			DatoRubroEventual dre = new DatoRubroEventual();
+			dre.setRubroEventualIf(rubroEventual);
+			dre.setRubroIf(rubro);
+			dre.setValor(total);
+			mapaRubroEventuales.put(rubro.getId(), dre);
+		} else {
+			DatoRubroEventual dre = mapaRubroEventuales.get(rubro.getId());
+			Double totalRubroEventual = dre.getValor();
+			totalRubroEventual += total;
+			dre.setValor(totalRubroEventual);
+			mapaRubroEventuales.put(rubro.getId(), dre);
+		}
+	}
+	
+	@TransactionAttribute(TransactionAttributeType.REQUIRED)
+	public Collection<RolPagoIf> getRolPagoList(String estadoDetalle) throws GenericBusinessException{
+		try{
+			String queryString = "select distinct rp ";
+			queryString += "from RolPagoEJB rp,RolPagoDetalleEJB rpd,RubroEJB r "; 
+			queryString += "where rp.id = rpd.rolpagoId and rpd.rubroId = r.id " +
+				" and rpd.rubroEventualId is null and rpd.estado = :estado "+
+				" and not r.tipoRubro = 'A' " +
+			 	" order by rp.id";
+			Query query = manager.createQuery(queryString);
+			query.setParameter("estado", estadoDetalle);
+			return query.getResultList();
+		} catch(Exception e){
+			e.printStackTrace();
+			throw new GenericBusinessException("Error al concultar Lista de Rol de Pago");
+		}
+	}
+	
+	@TransactionAttribute(TransactionAttributeType.REQUIRED)
+	public Collection<RolPagoIf> getRolPagoListGeneracionAsientos(String estadoDetalle,Collection<String> tiposRol ) throws GenericBusinessException{
+		try{
+			String queryString = "select distinct rp ";
+			queryString += "from RolPagoEJB rp,RolPagoDetalleEJB rpd,RubroEJB r,TipoRolEJB tr "; 
+			queryString += "where tr.id = rp.tiporolId and rp.id = rpd.rolpagoId and rpd.rubroId = r.id " +
+				" and rpd.rubroEventualId is null and rpd.estado = :estado "+
+				" and not r.tipoRubro = 'A' ";
+			if ( tiposRol.size() > 0 ){
+				queryString += " and (";
+				for ( String tr : tiposRol ){
+					queryString += (" tr.nombre like '%"+tr+"%' or");
+				}
+				queryString = queryString.substring(0,queryString.length()-2);
+				queryString += " ) ";
+			}
+			queryString += " order by rp.id";
+			Query query = manager.createQuery(queryString);
+			query.setParameter("estado", estadoDetalle);
+			return query.getResultList();
+		} catch(Exception e){
+			e.printStackTrace();
+			throw new GenericBusinessException("Error al concultar Lista de Rol de Pago");
+		}
+	}
+	
+	@TransactionAttribute(TransactionAttributeType.REQUIRED)
+	public Collection<RolPagoIf> getRolPagoEventualList(String estadoDetalle) throws GenericBusinessException{
+		try {
+			String queryString = "select distinct rp ";
+			queryString += "from RolPagoEJB rp,RolPagoDetalleEJB rpd "; 
+			queryString += "where rp.id = rpd.rolpagoId and rpd.rubroEventualId is not null and rpd.estado = :estado ";
+			queryString += " order by rp.id";
+			Query query = manager.createQuery(queryString);
+			query.setParameter("estado", estadoDetalle);
+			return query.getResultList();
+		} catch(Exception e){
+			e.printStackTrace();
+			throw new GenericBusinessException("Error al concultar Lista de Rol de Pago");
+		}
+	}
+	
+	@TransactionAttribute(TransactionAttributeType.REQUIRED)
+	public Collection<RolPagoIf> getRolPagoAnticiposList(String estadoDetalle) throws GenericBusinessException{
+		try {
+			String queryString = "select distinct rp ";
+			queryString += "from RolPagoEJB rp,RolPagoDetalleEJB rpd "; 
+			queryString += "where rp.id = rpd.rolpagoId " +
+					" and rpd.rubroEventualId is not null and rpd.estado = :estado ";
+			queryString += " order by rp.id";
+			Query query = manager.createQuery(queryString);
+			query.setParameter("estado", estadoDetalle);
+			return query.getResultList();
+		} catch(Exception e){
+			e.printStackTrace();
+			throw new GenericBusinessException("Error al concultar Lista de Rol de Pago");
+		}
+	}
+	
+	@TransactionAttribute(TransactionAttributeType.REQUIRED)
+	public int getRolPagoListSize(Map aMap) {
+		String objectName = "e";
+		String where = QueryBuilder.buildWhere(aMap, objectName);
+		String queryString = "select count(e) from RolPagoEJB " + objectName + " where "
+		+ where;
+		Query query = manager.createQuery(queryString);
+
+		Set keys = aMap.keySet();
+		Iterator it = keys.iterator();
+
+		while (it.hasNext()) {
+			String propertyKey = (String) it.next();
+			Object property = aMap.get(propertyKey);
+			query.setParameter(propertyKey, property);
+
+		}
+
+		List countQueryResult = query.getResultList();
+		Long countResult = (Long) countQueryResult.get(0);
+		log.debug("The list size is: " + countResult.intValue());
+		return countResult.intValue();
+	}
+	
+	@TransactionAttribute(TransactionAttributeType.REQUIRED)
+	public java.util.Collection findRolPagoByQuery(int startIndex, int endIndex, Map aMap) {
+		if ((endIndex - startIndex) < 0) {
+			return new ArrayList();
+		}
+		
+		String objectName = "e";
+		String where = QueryBuilder.buildWhere(aMap, objectName);
+		String queryString = "from RolPagoEJB " + objectName + " where "
+		+ where;
+		Query query = manager.createQuery(queryString);
+
+		Set keys = aMap.keySet();
+		Iterator it = keys.iterator();
+
+		while (it.hasNext()) {
+			String propertyKey = (String) it.next();
+			Object property = aMap.get(propertyKey);
+			query.setParameter(propertyKey, property);
+
+		}
+
+		query.setFirstResult(startIndex);
+		query.setMaxResults(endIndex - startIndex);
+		return query.getResultList();
+	}
+	
+	@TransactionAttribute(TransactionAttributeType.REQUIRED)
+	public java.util.Collection<RolPagoIf> findRolPagoByQuery(Map<String,Object> aMap,Long contratoId,String estadoDetalle) throws GenericBusinessException {
+		try{
+			String objectName = "e";
+			String where = QueryBuilder.buildWhere(aMap, objectName);
+			String queryString = "select distinct e from RolPagoEJB " + objectName + ",RolPagoDetalleEJB rpd where ";
+			queryString += (" e.id=rpd.rolpagoId and "+ where);
+			if ( estadoDetalle!=null )
+				queryString += " and rpd.estado = :estadoDetalle"; 
+			if ( contratoId != null )
+				queryString += " and rpd.contratoId = :contratoId"; 
+			Query query = manager.createQuery(queryString);
+	
+			Set keys = aMap.keySet();
+			Iterator it = keys.iterator();
+	
+			while (it.hasNext()) {
+				String propertyKey = (String) it.next();
+				Object property = aMap.get(propertyKey);
+				query.setParameter(propertyKey, property);
+	
+			}
+			if ( estadoDetalle!=null )
+				query.setParameter("estadoDetalle", estadoDetalle);
+			if ( contratoId != null )
+				query.setParameter("contratoId", contratoId);
+			
+			return query.getResultList();
+		} catch(Exception e){
+			e.printStackTrace();
+			throw new GenericBusinessException("Error al consultar Rol de Pagos");
+		}
+	}
+
+	/************************ CONSULTA PARA REPORTE POR CONTRATO **************************************/
+	
+	
+	public Collection<Object> consultarReportePorContrato(Long contratoId,Date fechaInicio,Date fechaFin)
+	throws GenericBusinessException {
+
+		if ( fechaInicio == null )
+			throw new GenericBusinessException("Fecha inicio debe ser establecida !!");
+		if ( fechaInicio == null )
+			throw new GenericBusinessException("Fecha fin debe ser establecida !!");
+
+		if ( fechaInicio.compareTo(fechaFin) > 0 )
+			throw new GenericBusinessException("Fecha Inicio debe ser anterior que Fecha Fin !!");
+
+		Calendar calInicio = new GregorianCalendar();
+		calInicio.setTimeInMillis(fechaInicio.getTime());
+		calInicio.set(Calendar.DAY_OF_MONTH, 1);
+		
+		Calendar calFin = new GregorianCalendar();
+		calFin.setTimeInMillis(fechaFin.getTime());
+		calFin.set( Calendar.DAY_OF_MONTH , 1 );
+
+		ContratoIf contratoIf = contratoLocal.getContrato(contratoId);
+		
+		Map<Long,RubroIf> mapaRubros = new HashMap<Long, RubroIf>();
+		Map<Long,String> mapaTipoRubros =  new HashMap<Long, String>();
+		
+		Collection<Object> resultado = new ArrayList<Object>();
+		
+		while ( calInicio.compareTo(calFin) <= 0 )
+		{
+			int mes = calInicio.get(Calendar.MONTH);
+			int anio = calInicio.get(Calendar.YEAR);
+			Map<String, Object> mapa = new HashMap<String, Object>();
+			mapa.put("mes", mes);
+			mapa.put("anio", anio);
+			mapa.put("tipocontratoId", contratoIf.getTipocontratoId());
+			
+			Collection<RolPagoIf> rolesPago = findRolPagoByQuery(mapa);
+			for ( RolPagoIf rolPagoIf : rolesPago ){
+				
+				Map<String, Object> mapaDetalle = new HashMap<String, Object>();
+				mapaDetalle.put("rolpagoId", rolPagoIf.getId());
+				mapaDetalle.put("contratoId", contratoId);
+				
+				Collection<RolPagoDetalleIf> detalles = rolPagoDetalleLocal.findRolPagoDetalleByQueryNormal(mapaDetalle);
+				for ( RolPagoDetalleIf rpd : detalles ){
+					RubroIf rubroIf = utilesLocal.verificarRubrosEnMapa(mapaRubros,mapaTipoRubros,rpd.getRubroId());
+					BigDecimal valor = rpd.getValor();
+					Collection registro = new ArrayList();
+					registro.add(anio);
+					registro.add(mes);
+					registro.add(rubroIf.getNombre());
+					registro.add(valor);
+					resultado.add(registro);
+				}
+	
+				//RUBROS EVENTUALES
+				Map<String, Object> mapaEventual = new HashMap<String, Object>();
+				//parte de rolDetalle
+				//mapaEventual.put("rolpagoId", rolPagoIf.getId());
+				mapaEventual.put("contratoId", contratoId);
+				//parte de rubro Eventual
+				mapaEventual.put("tipoRolIdCobro", rolPagoIf.getTiporolId());
+				mapaEventual.put("mesCobro", rolPagoIf.getMes() );
+				mapaEventual.put("anioCobro", rolPagoIf.getAnio() );
+				mapaEventual.put("tipoContratoId", rolPagoIf.getTipocontratoId() );
+				//mapaEventual.put("estado", EstadoRolPagoDetalle.getLetraEstadoRolPagoDetalle(EstadoRolPagoDetalle.AUTORIZADO));
+				Collection<RolPagoDetalleIf> rolPagoDetalles = rolPagoDetalleLocal.findRolPagoDetalleEventualesByMapByEstados(mapaEventual
+						, EstadoRolPagoDetalle.EMITIDO.getLetra()
+						, EstadoRolPagoDetalle.AUTORIZADO.getLetra()
+						, EstadoRolPagoDetalle.PAGADO.getLetra() );
+				for ( RolPagoDetalleIf rolPagoDetalle : rolPagoDetalles ){
+					Long idRubroEventual = rolPagoDetalle.getRubroEventualId();
+					BigDecimal valor = rolPagoDetalle.getValor();
+					RubroEventualIf rubroEventualIf = rubroEventualLocal.getRubroEventual(idRubroEventual);
+					RubroIf rubroIf = utilesLocal.verificarRubrosEnMapa(mapaRubros,mapaTipoRubros,rubroEventualIf.getRubroId());
+					
+					Collection registro = new ArrayList();
+					registro.add(anio);
+					registro.add(mes);
+					registro.add(rubroIf.getNombre());
+					registro.add(valor);
+					resultado.add(registro);
+				}
+				
+			}
+			
+			//Si es Diciembre subo el año
+			if ( calInicio.get(Calendar.MONTH) == 11 ){
+				int anioCalInicio = calInicio.get(Calendar.YEAR); 
+				calInicio.set(Calendar.YEAR, anioCalInicio+1);
+			}
+			
+			calInicio.roll(Calendar.MONTH, 1);
+			
+			/*int mesInicio = calInicio.get(Calendar.MONTH);
+			int anioInicio = calInicio.get(Calendar.YEAR);
+			
+			int mesFin = calFin.get(Calendar.MONTH);
+			int anioFin = calFin.get(Calendar.YEAR);
+			
+			if ( anioInicio == anioFin ){
+				if ( mesInicio == mesFin ){
+					
+				} else {
+					
+				}
+			} else {
+				
+			}*/
+
+		}
+
+		return resultado;
+
+	}
+	
+}

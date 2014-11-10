@@ -1,0 +1,1074 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<skelet>
+<config>
+<author>LAMC</author>
+<version>1.0</version>
+<company>Finalist IT Group</company>
+<templates>
+<template-root>../templates/entity_facade_jboss_jsk_2_0</template-root>
+<config-param name="serviceTier" value="ServiceLocator"/>
+<config-param name="useWebService" value="false"/>
+<config-param name="useRelations" value="false"/>
+<config-param name="businessTier" value="EJB 3.0"/>
+<config-param name="webTier" value="Struts 1.2"/>
+<config-param name="appserver" value="JBoss 4.x"/>
+</templates>
+</config>
+<module name="app">
+<module-data name="name">spirit</module-data>
+<module-data name="version">1.0</module-data>
+<module-data name="description">Spirit</module-data>
+<module-data name="root-package">com.spirit</module-data>
+<module-data name="log-framework">log4j</module-data>
+<module-data name="date-format">dd/MM/yyyy</module-data>
+<module-data name="timestamp-format">dd/MM/yyyy HH:mm:ss</module-data>
+</module>
+<module name="paths">
+<module-data name="service_output">./src/java-service/</module-data>
+<module-data name="hibernate_output">./src/java-hibernate/</module-data>
+<module-data name="ejb_output">./src/java-ejb/</module-data>
+<module-data name="web_output">./src/java-web/</module-data>
+<module-data name="test_output">./src/java-test/</module-data>
+<module-data name="jsp_output">./src/web/</module-data>
+<module-data name="config_output">./conf/</module-data>
+<module-data name="mock_output"/>
+<module-data name="swing_output">./src/java-swing/</module-data>
+<module-data name="spring_output"/>
+</module>
+<module name="datasource">
+<module-data name="jndi-name">jdbc/OracleDS</module-data>
+<module-data name="mapping">OracleSQL</module-data>
+<module-data name="jdbc-url">jdbc:oracle:thin:@192.168.100.9:1521:crea</module-data>
+<module-data name="user-name">pruebas</module-data>
+<module-data name="password">pruebas</module-data>
+</module>
+<module name="session">
+<module-data name="name">RolSession</module-data>
+<module-data name="description">RolSession</module-data>
+<module-data name="root-package">com.spirit.seguridad.session</module-data>
+<ref-name>RolSession</ref-name>
+<ref>Rol</ref>
+</module>
+<module name="session">
+<module-data name="name">RolOpcionSession</module-data>
+<module-data name="description">RolOpcionSession</module-data>
+<module-data name="root-package">com.spirit.seguridad.session</module-data>
+<ref-name>RolOpcionSession</ref-name>
+<ref>RolOpcion</ref>
+</module>
+<module name="session">
+<module-data name="name">RolUsuarioSession</module-data>
+<module-data name="description">RolUsuarioSession</module-data>
+<module-data name="root-package">com.spirit.seguridad.session</module-data>
+<ref-name>RolUsuarioSession</ref-name>
+<ref>RolUsuario</ref>
+</module>
+<module name="session">
+<module-data name="name">MenuSession</module-data>
+<module-data name="description">MenuSession</module-data>
+<module-data name="root-package">com.spirit.seguridad.session</module-data>
+<ref-name>MenuSession</ref-name>
+<ref>Menu</ref>
+</module>
+<module name="session">
+<module-data name="name">UsuarioCuentaSession</module-data>
+<module-data name="description">UsuarioCuentaSession</module-data>
+<module-data name="root-package">com.spirit.seguridad.session</module-data>
+<ref-name>UsuarioCuentaSession</ref-name>
+<ref>UsuarioCuenta</ref>
+</module>
+<module name="session">
+<module-data name="name">UsuarioDocumentoSession</module-data>
+<module-data name="description">UsuarioDocumentoSession</module-data>
+<module-data name="root-package">com.spirit.seguridad.session</module-data>
+<ref-name>UsuarioDocumentoSession</ref-name>
+<ref>UsuarioDocumento</ref>
+</module>
+<module name="session">
+<module-data name="name">UsuarioNoticiasSession</module-data>
+<module-data name="description">UsuarioNoticiasSession</module-data>
+<module-data name="root-package">com.spirit.seguridad.session</module-data>
+<ref-name>UsuarioNoticiasSession</ref-name>
+<ref>UsuarioNoticias</ref>
+</module>
+<module name="entity">
+<module-data name="name">Menu</module-data>
+<module-data name="description">Menu</module-data>
+<module-data name="root-package">com.spirit.seguridad.entity</module-data>
+<module-data name="table-name">MENU</module-data>
+<module-data name="primary-key">id</module-data>
+<module-data name="primary-key-type">java.lang.Long</module-data>
+<module-data name="is-composite">false</module-data>
+<ref-name>Menu</ref-name>
+<module-data name="field">
+<module-data name="name">id</module-data>
+<module-data name="type">java.lang.Long</module-data>
+<module-data name="column-name">ID</module-data>
+<module-data name="required">true</module-data>
+<module-data name="sql-type">NUMBER(10)</module-data>
+<module-data name="jdbc-type">BIGINT</module-data>
+<module-data name="primary-key">true</module-data>
+<module-data name="auto-primary-key">true</module-data>
+<module-data name="foreign-key">false</module-data>
+<module-data name="validation-depends">float, maxlength</module-data>
+<module-data name="validation-xml">&lt;arg1 key="${var:maxlength}" name="maxlength" resource="false"/&gt;
+&lt;var&gt;
+   &lt;var-name&gt;maxlength&lt;/var-name&gt;
+   &lt;var-value&gt;10&lt;/var-value&gt;
+&lt;/var&gt;</module-data>
+</module-data>
+<module-data name="field">
+<module-data name="name">codigo</module-data>
+<module-data name="type">java.lang.String</module-data>
+<module-data name="column-name">CODIGO</module-data>
+<module-data name="required">true</module-data>
+<module-data name="sql-type">VARCHAR2(10)</module-data>
+<module-data name="jdbc-type">VARCHAR</module-data>
+<module-data name="primary-key">false</module-data>
+<module-data name="auto-primary-key">false</module-data>
+<module-data name="foreign-key">false</module-data>
+<module-data name="validation-depends">required, maxlength</module-data>
+<module-data name="validation-xml">&lt;arg1 key="${var:maxlength}" name="maxlength" resource="false"/&gt;
+&lt;var&gt;
+   &lt;var-name&gt;maxlength&lt;/var-name&gt;
+   &lt;var-value&gt;10&lt;/var-value&gt;
+&lt;/var&gt;</module-data>
+</module-data>
+<module-data name="field">
+<module-data name="name">nombre</module-data>
+<module-data name="type">java.lang.String</module-data>
+<module-data name="column-name">NOMBRE</module-data>
+<module-data name="required">true</module-data>
+<module-data name="sql-type">VARCHAR2(100)</module-data>
+<module-data name="jdbc-type">VARCHAR</module-data>
+<module-data name="primary-key">false</module-data>
+<module-data name="auto-primary-key">false</module-data>
+<module-data name="foreign-key">false</module-data>
+<module-data name="validation-depends">required, maxlength</module-data>
+<module-data name="validation-xml">&lt;arg1 key="${var:maxlength}" name="maxlength" resource="false"/&gt;
+&lt;var&gt;
+   &lt;var-name&gt;maxlength&lt;/var-name&gt;
+   &lt;var-value&gt;100&lt;/var-value&gt;
+&lt;/var&gt;</module-data>
+</module-data>
+<module-data name="field">
+<module-data name="name">padreId</module-data>
+<module-data name="type">java.lang.Long</module-data>
+<module-data name="column-name">PADRE_ID</module-data>
+<module-data name="required">false</module-data>
+<module-data name="sql-type">NUMBER(10)</module-data>
+<module-data name="jdbc-type">BIGINT</module-data>
+<module-data name="primary-key">false</module-data>
+<module-data name="auto-primary-key">false</module-data>
+<module-data name="foreign-key">false</module-data>
+<module-data name="validation-depends">float, maxlength</module-data>
+<module-data name="validation-xml">&lt;arg1 key="${var:maxlength}" name="maxlength" resource="false"/&gt;
+&lt;var&gt;
+   &lt;var-name&gt;maxlength&lt;/var-name&gt;
+   &lt;var-value&gt;10&lt;/var-value&gt;
+&lt;/var&gt;</module-data>
+</module-data>
+<module-data name="field">
+<module-data name="name">nivel</module-data>
+<module-data name="type">java.lang.Integer</module-data>
+<module-data name="column-name">NIVEL</module-data>
+<module-data name="required">false</module-data>
+<module-data name="sql-type">NUMBER(3)</module-data>
+<module-data name="jdbc-type">INTEGER</module-data>
+<module-data name="primary-key">false</module-data>
+<module-data name="auto-primary-key">false</module-data>
+<module-data name="foreign-key">false</module-data>
+<module-data name="validation-depends">integer</module-data>
+<module-data name="validation-xml"/>
+</module-data>
+<module-data name="field">
+<module-data name="name">favorito</module-data>
+<module-data name="type">java.lang.Integer</module-data>
+<module-data name="column-name">FAVORITO</module-data>
+<module-data name="required">false</module-data>
+<module-data name="sql-type">NUMBER(3)</module-data>
+<module-data name="jdbc-type">INTEGER</module-data>
+<module-data name="primary-key">false</module-data>
+<module-data name="auto-primary-key">false</module-data>
+<module-data name="foreign-key">false</module-data>
+<module-data name="validation-depends">integer</module-data>
+<module-data name="validation-xml"/>
+</module-data>
+<module-data name="field">
+<module-data name="name">panel</module-data>
+<module-data name="type">java.lang.String</module-data>
+<module-data name="column-name">PANEL</module-data>
+<module-data name="required">false</module-data>
+<module-data name="sql-type">VARCHAR2(100)</module-data>
+<module-data name="jdbc-type">VARCHAR</module-data>
+<module-data name="primary-key">false</module-data>
+<module-data name="auto-primary-key">false</module-data>
+<module-data name="foreign-key">false</module-data>
+<module-data name="validation-depends">maxlength</module-data>
+<module-data name="validation-xml">&lt;arg1 key="${var:maxlength}" name="maxlength" resource="false"/&gt;
+&lt;var&gt;
+   &lt;var-name&gt;maxlength&lt;/var-name&gt;
+   &lt;var-value&gt;100&lt;/var-value&gt;
+&lt;/var&gt;</module-data>
+</module-data>
+</module>
+<module name="entity">
+<module-data name="name">Rol</module-data>
+<module-data name="description">Rol</module-data>
+<module-data name="root-package">com.spirit.seguridad.entity</module-data>
+<module-data name="table-name">ROL</module-data>
+<module-data name="primary-key">id</module-data>
+<module-data name="primary-key-type">java.lang.Long</module-data>
+<module-data name="is-composite">false</module-data>
+<ref-name>Rol</ref-name>
+<module-data name="field">
+<module-data name="name">id</module-data>
+<module-data name="type">java.lang.Long</module-data>
+<module-data name="column-name">ID</module-data>
+<module-data name="required">true</module-data>
+<module-data name="sql-type">NUMBER(10)</module-data>
+<module-data name="jdbc-type">BIGINT</module-data>
+<module-data name="primary-key">true</module-data>
+<module-data name="auto-primary-key">true</module-data>
+<module-data name="foreign-key">false</module-data>
+<module-data name="validation-depends">float, maxlength</module-data>
+<module-data name="validation-xml">&lt;arg1 key="${var:maxlength}" name="maxlength" resource="false"/&gt;
+&lt;var&gt;
+   &lt;var-name&gt;maxlength&lt;/var-name&gt;
+   &lt;var-value&gt;10&lt;/var-value&gt;
+&lt;/var&gt;</module-data>
+</module-data>
+<module-data name="field">
+<module-data name="name">codigo</module-data>
+<module-data name="type">java.lang.String</module-data>
+<module-data name="column-name">CODIGO</module-data>
+<module-data name="required">false</module-data>
+<module-data name="sql-type">VARCHAR2(5)</module-data>
+<module-data name="jdbc-type">VARCHAR</module-data>
+<module-data name="primary-key">false</module-data>
+<module-data name="auto-primary-key">false</module-data>
+<module-data name="foreign-key">false</module-data>
+<module-data name="validation-depends">maxlength</module-data>
+<module-data name="validation-xml">&lt;arg1 key="${var:maxlength}" name="maxlength" resource="false"/&gt;
+&lt;var&gt;
+   &lt;var-name&gt;maxlength&lt;/var-name&gt;
+   &lt;var-value&gt;5&lt;/var-value&gt;
+&lt;/var&gt;</module-data>
+</module-data>
+<module-data name="field">
+<module-data name="name">nombre</module-data>
+<module-data name="type">java.lang.String</module-data>
+<module-data name="column-name">NOMBRE</module-data>
+<module-data name="required">false</module-data>
+<module-data name="sql-type">VARCHAR2(30)</module-data>
+<module-data name="jdbc-type">VARCHAR</module-data>
+<module-data name="primary-key">false</module-data>
+<module-data name="auto-primary-key">false</module-data>
+<module-data name="foreign-key">false</module-data>
+<module-data name="validation-depends">maxlength</module-data>
+<module-data name="validation-xml">&lt;arg1 key="${var:maxlength}" name="maxlength" resource="false"/&gt;
+&lt;var&gt;
+   &lt;var-name&gt;maxlength&lt;/var-name&gt;
+   &lt;var-value&gt;30&lt;/var-value&gt;
+&lt;/var&gt;</module-data>
+</module-data>
+<module-data name="field">
+<module-data name="name">status</module-data>
+<module-data name="type">java.lang.String</module-data>
+<module-data name="column-name">STATUS</module-data>
+<module-data name="required">false</module-data>
+<module-data name="sql-type">VARCHAR2(1)</module-data>
+<module-data name="jdbc-type">VARCHAR</module-data>
+<module-data name="primary-key">false</module-data>
+<module-data name="auto-primary-key">false</module-data>
+<module-data name="foreign-key">false</module-data>
+<module-data name="validation-depends">maxlength</module-data>
+<module-data name="validation-xml">&lt;arg1 key="${var:maxlength}" name="maxlength" resource="false"/&gt;
+&lt;var&gt;
+   &lt;var-name&gt;maxlength&lt;/var-name&gt;
+   &lt;var-value&gt;1&lt;/var-value&gt;
+&lt;/var&gt;</module-data>
+</module-data>
+<module-data name="field">
+<module-data name="name">tipoRolUsuario</module-data>
+<module-data name="type">java.lang.String</module-data>
+<module-data name="column-name">TIPO_ROL_USUARIO</module-data>
+<module-data name="required">false</module-data>
+<module-data name="sql-type">VARCHAR2(1)</module-data>
+<module-data name="jdbc-type">VARCHAR</module-data>
+<module-data name="primary-key">false</module-data>
+<module-data name="auto-primary-key">false</module-data>
+<module-data name="foreign-key">false</module-data>
+<module-data name="validation-depends">maxlength</module-data>
+<module-data name="validation-xml">&lt;arg1 key="${var:maxlength}" name="maxlength" resource="false"/&gt;
+&lt;var&gt;
+   &lt;var-name&gt;maxlength&lt;/var-name&gt;
+   &lt;var-value&gt;1&lt;/var-value&gt;
+&lt;/var&gt;</module-data>
+</module-data>
+<module-data name="field">
+<module-data name="name">empresaId</module-data>
+<module-data name="type">java.lang.Long</module-data>
+<module-data name="column-name">EMPRESA_ID</module-data>
+<module-data name="required">false</module-data>
+<module-data name="sql-type">NUMBER(10)</module-data>
+<module-data name="jdbc-type">BIGINT</module-data>
+<module-data name="primary-key">false</module-data>
+<module-data name="auto-primary-key">false</module-data>
+<module-data name="foreign-key">false</module-data>
+<module-data name="validation-depends">float, maxlength</module-data>
+<module-data name="validation-xml">&lt;arg1 key="${var:maxlength}" name="maxlength" resource="false"/&gt;
+&lt;var&gt;
+   &lt;var-name&gt;maxlength&lt;/var-name&gt;
+   &lt;var-value&gt;10&lt;/var-value&gt;
+&lt;/var&gt;</module-data>
+</module-data>
+</module>
+<module name="entity">
+<module-data name="name">RolUsuario</module-data>
+<module-data name="description">RolUsuario</module-data>
+<module-data name="root-package">com.spirit.seguridad.entity</module-data>
+<module-data name="table-name">ROL_USUARIO</module-data>
+<module-data name="primary-key">id</module-data>
+<module-data name="primary-key-type">java.lang.Long</module-data>
+<module-data name="is-composite">false</module-data>
+<ref-name>RolUsuario</ref-name>
+<module-data name="field">
+<module-data name="name">id</module-data>
+<module-data name="type">java.lang.Long</module-data>
+<module-data name="column-name">ID</module-data>
+<module-data name="required">true</module-data>
+<module-data name="sql-type">NUMBER(10)</module-data>
+<module-data name="jdbc-type">BIGINT</module-data>
+<module-data name="primary-key">true</module-data>
+<module-data name="auto-primary-key">true</module-data>
+<module-data name="foreign-key">false</module-data>
+<module-data name="validation-depends">float, maxlength</module-data>
+<module-data name="validation-xml">&lt;arg1 key="${var:maxlength}" name="maxlength" resource="false"/&gt;
+&lt;var&gt;
+   &lt;var-name&gt;maxlength&lt;/var-name&gt;
+   &lt;var-value&gt;10&lt;/var-value&gt;
+&lt;/var&gt;</module-data>
+</module-data>
+<module-data name="field">
+<module-data name="name">rolId</module-data>
+<module-data name="type">java.lang.Long</module-data>
+<module-data name="column-name">ROL_ID</module-data>
+<module-data name="required">false</module-data>
+<module-data name="sql-type">NUMBER(10)</module-data>
+<module-data name="jdbc-type">BIGINT</module-data>
+<module-data name="primary-key">false</module-data>
+<module-data name="auto-primary-key">false</module-data>
+<module-data name="foreign-key">false</module-data>
+<module-data name="validation-depends">float, maxlength</module-data>
+<module-data name="validation-xml">&lt;arg1 key="${var:maxlength}" name="maxlength" resource="false"/&gt;
+&lt;var&gt;
+   &lt;var-name&gt;maxlength&lt;/var-name&gt;
+   &lt;var-value&gt;10&lt;/var-value&gt;
+&lt;/var&gt;</module-data>
+</module-data>
+<module-data name="field">
+<module-data name="name">usuarioId</module-data>
+<module-data name="type">java.lang.Long</module-data>
+<module-data name="column-name">USUARIO_ID</module-data>
+<module-data name="required">false</module-data>
+<module-data name="sql-type">NUMBER(10)</module-data>
+<module-data name="jdbc-type">BIGINT</module-data>
+<module-data name="primary-key">false</module-data>
+<module-data name="auto-primary-key">false</module-data>
+<module-data name="foreign-key">false</module-data>
+<module-data name="validation-depends">float, maxlength</module-data>
+<module-data name="validation-xml">&lt;arg1 key="${var:maxlength}" name="maxlength" resource="false"/&gt;
+&lt;var&gt;
+   &lt;var-name&gt;maxlength&lt;/var-name&gt;
+   &lt;var-value&gt;10&lt;/var-value&gt;
+&lt;/var&gt;</module-data>
+</module-data>
+</module>
+<module name="entity">
+<module-data name="name">UsuarioCuenta</module-data>
+<module-data name="description">UsuarioCuenta</module-data>
+<module-data name="root-package">com.spirit.seguridad.entity</module-data>
+<module-data name="table-name">USUARIO_CUENTA</module-data>
+<module-data name="primary-key">id</module-data>
+<module-data name="primary-key-type">java.lang.Long</module-data>
+<module-data name="is-composite">false</module-data>
+<ref-name>UsuarioCuenta</ref-name>
+<module-data name="field">
+<module-data name="name">id</module-data>
+<module-data name="type">java.lang.Long</module-data>
+<module-data name="column-name">ID</module-data>
+<module-data name="required">true</module-data>
+<module-data name="sql-type">NUMBER(10)</module-data>
+<module-data name="jdbc-type">BIGINT</module-data>
+<module-data name="primary-key">true</module-data>
+<module-data name="auto-primary-key">true</module-data>
+<module-data name="foreign-key">false</module-data>
+<module-data name="validation-depends">float, maxlength</module-data>
+<module-data name="validation-xml">&lt;arg1 key="${var:maxlength}" name="maxlength" resource="false"/&gt;
+&lt;var&gt;
+   &lt;var-name&gt;maxlength&lt;/var-name&gt;
+   &lt;var-value&gt;10&lt;/var-value&gt;
+&lt;/var&gt;</module-data>
+</module-data>
+<module-data name="field">
+<module-data name="name">usuarioId</module-data>
+<module-data name="type">java.lang.Long</module-data>
+<module-data name="column-name">USUARIO_ID</module-data>
+<module-data name="required">false</module-data>
+<module-data name="sql-type">NUMBER(10)</module-data>
+<module-data name="jdbc-type">BIGINT</module-data>
+<module-data name="primary-key">false</module-data>
+<module-data name="auto-primary-key">false</module-data>
+<module-data name="foreign-key">false</module-data>
+<module-data name="validation-depends">float, maxlength</module-data>
+<module-data name="validation-xml">&lt;arg1 key="${var:maxlength}" name="maxlength" resource="false"/&gt;
+&lt;var&gt;
+   &lt;var-name&gt;maxlength&lt;/var-name&gt;
+   &lt;var-value&gt;10&lt;/var-value&gt;
+&lt;/var&gt;</module-data>
+</module-data>
+<module-data name="field">
+<module-data name="name">cuentaId</module-data>
+<module-data name="type">java.lang.Long</module-data>
+<module-data name="column-name">CUENTA_ID</module-data>
+<module-data name="required">true</module-data>
+<module-data name="sql-type">NUMBER(10)</module-data>
+<module-data name="jdbc-type">BIGINT</module-data>
+<module-data name="primary-key">false</module-data>
+<module-data name="auto-primary-key">false</module-data>
+<module-data name="foreign-key">false</module-data>
+<module-data name="validation-depends">required, float, maxlength</module-data>
+<module-data name="validation-xml">&lt;arg1 key="${var:maxlength}" name="maxlength" resource="false"/&gt;
+&lt;var&gt;
+   &lt;var-name&gt;maxlength&lt;/var-name&gt;
+   &lt;var-value&gt;10&lt;/var-value&gt;
+&lt;/var&gt;</module-data>
+</module-data>
+</module>
+<module name="entity">
+<module-data name="name">UsuarioDocumento</module-data>
+<module-data name="description">UsuarioDocumento</module-data>
+<module-data name="root-package">com.spirit.seguridad.entity</module-data>
+<module-data name="table-name">USUARIO_DOCUMENTO</module-data>
+<module-data name="primary-key">id</module-data>
+<module-data name="primary-key-type">java.lang.Long</module-data>
+<module-data name="is-composite">false</module-data>
+<ref-name>UsuarioDocumento</ref-name>
+<module-data name="field">
+<module-data name="name">id</module-data>
+<module-data name="type">java.lang.Long</module-data>
+<module-data name="column-name">ID</module-data>
+<module-data name="required">true</module-data>
+<module-data name="sql-type">NUMBER(10)</module-data>
+<module-data name="jdbc-type">BIGINT</module-data>
+<module-data name="primary-key">true</module-data>
+<module-data name="auto-primary-key">true</module-data>
+<module-data name="foreign-key">false</module-data>
+<module-data name="validation-depends">float, maxlength</module-data>
+<module-data name="validation-xml">&lt;arg1 key="${var:maxlength}" name="maxlength" resource="false"/&gt;
+&lt;var&gt;
+   &lt;var-name&gt;maxlength&lt;/var-name&gt;
+   &lt;var-value&gt;10&lt;/var-value&gt;
+&lt;/var&gt;</module-data>
+</module-data>
+<module-data name="field">
+<module-data name="name">usuarioId</module-data>
+<module-data name="type">java.lang.Long</module-data>
+<module-data name="column-name">USUARIO_ID</module-data>
+<module-data name="required">false</module-data>
+<module-data name="sql-type">NUMBER(10)</module-data>
+<module-data name="jdbc-type">BIGINT</module-data>
+<module-data name="primary-key">false</module-data>
+<module-data name="auto-primary-key">false</module-data>
+<module-data name="foreign-key">false</module-data>
+<module-data name="validation-depends">float, maxlength</module-data>
+<module-data name="validation-xml">&lt;arg1 key="${var:maxlength}" name="maxlength" resource="false"/&gt;
+&lt;var&gt;
+   &lt;var-name&gt;maxlength&lt;/var-name&gt;
+   &lt;var-value&gt;10&lt;/var-value&gt;
+&lt;/var&gt;</module-data>
+</module-data>
+<module-data name="field">
+<module-data name="name">documentoId</module-data>
+<module-data name="type">java.lang.Long</module-data>
+<module-data name="column-name">DOCUMENTO_ID</module-data>
+<module-data name="required">true</module-data>
+<module-data name="sql-type">NUMBER(10)</module-data>
+<module-data name="jdbc-type">BIGINT</module-data>
+<module-data name="primary-key">false</module-data>
+<module-data name="auto-primary-key">false</module-data>
+<module-data name="foreign-key">false</module-data>
+<module-data name="validation-depends">required, float, maxlength</module-data>
+<module-data name="validation-xml">&lt;arg1 key="${var:maxlength}" name="maxlength" resource="false"/&gt;
+&lt;var&gt;
+   &lt;var-name&gt;maxlength&lt;/var-name&gt;
+   &lt;var-value&gt;10&lt;/var-value&gt;
+&lt;/var&gt;</module-data>
+</module-data>
+<module-data name="field">
+<module-data name="name">permisoImpresion</module-data>
+<module-data name="type">java.lang.String</module-data>
+<module-data name="column-name">PERMISO_IMPRESION</module-data>
+<module-data name="required">false</module-data>
+<module-data name="sql-type">VARCHAR2(1)</module-data>
+<module-data name="jdbc-type">VARCHAR</module-data>
+<module-data name="primary-key">false</module-data>
+<module-data name="auto-primary-key">false</module-data>
+<module-data name="foreign-key">false</module-data>
+<module-data name="validation-depends">maxlength</module-data>
+<module-data name="validation-xml">&lt;arg1 key="${var:maxlength}" name="maxlength" resource="false"/&gt;
+&lt;var&gt;
+   &lt;var-name&gt;maxlength&lt;/var-name&gt;
+   &lt;var-value&gt;1&lt;/var-value&gt;
+&lt;/var&gt;</module-data>
+</module-data>
+<module-data name="field">
+<module-data name="name">permisoRegistro</module-data>
+<module-data name="type">java.lang.String</module-data>
+<module-data name="column-name">PERMISO_REGISTRO</module-data>
+<module-data name="required">false</module-data>
+<module-data name="sql-type">VARCHAR2(1)</module-data>
+<module-data name="jdbc-type">VARCHAR</module-data>
+<module-data name="primary-key">false</module-data>
+<module-data name="auto-primary-key">false</module-data>
+<module-data name="foreign-key">false</module-data>
+<module-data name="validation-depends">maxlength</module-data>
+<module-data name="validation-xml">&lt;arg1 key="${var:maxlength}" name="maxlength" resource="false"/&gt;
+&lt;var&gt;
+   &lt;var-name&gt;maxlength&lt;/var-name&gt;
+   &lt;var-value&gt;1&lt;/var-value&gt;
+&lt;/var&gt;</module-data>
+</module-data>
+<module-data name="field">
+<module-data name="name">permisoBorrado</module-data>
+<module-data name="type">java.lang.String</module-data>
+<module-data name="column-name">PERMISO_BORRADO</module-data>
+<module-data name="required">false</module-data>
+<module-data name="sql-type">VARCHAR2(1)</module-data>
+<module-data name="jdbc-type">VARCHAR</module-data>
+<module-data name="primary-key">false</module-data>
+<module-data name="auto-primary-key">false</module-data>
+<module-data name="foreign-key">false</module-data>
+<module-data name="validation-depends">maxlength</module-data>
+<module-data name="validation-xml">&lt;arg1 key="${var:maxlength}" name="maxlength" resource="false"/&gt;
+&lt;var&gt;
+   &lt;var-name&gt;maxlength&lt;/var-name&gt;
+   &lt;var-value&gt;1&lt;/var-value&gt;
+&lt;/var&gt;</module-data>
+</module-data>
+<module-data name="field">
+<module-data name="name">permisoAutorizar</module-data>
+<module-data name="type">java.lang.String</module-data>
+<module-data name="column-name">PERMISO_AUTORIZAR</module-data>
+<module-data name="required">false</module-data>
+<module-data name="sql-type">VARCHAR2(1)</module-data>
+<module-data name="jdbc-type">VARCHAR</module-data>
+<module-data name="primary-key">false</module-data>
+<module-data name="auto-primary-key">false</module-data>
+<module-data name="foreign-key">false</module-data>
+<module-data name="validation-depends">maxlength</module-data>
+<module-data name="validation-xml">&lt;arg1 key="${var:maxlength}" name="maxlength" resource="false"/&gt;
+&lt;var&gt;
+   &lt;var-name&gt;maxlength&lt;/var-name&gt;
+   &lt;var-value&gt;1&lt;/var-value&gt;
+&lt;/var&gt;</module-data>
+</module-data>
+<module-data name="field">
+<module-data name="name">estado</module-data>
+<module-data name="type">java.lang.String</module-data>
+<module-data name="column-name">ESTADO</module-data>
+<module-data name="required">false</module-data>
+<module-data name="sql-type">VARCHAR2(1)</module-data>
+<module-data name="jdbc-type">VARCHAR</module-data>
+<module-data name="primary-key">false</module-data>
+<module-data name="auto-primary-key">false</module-data>
+<module-data name="foreign-key">false</module-data>
+<module-data name="validation-depends">maxlength</module-data>
+<module-data name="validation-xml">&lt;arg1 key="${var:maxlength}" name="maxlength" resource="false"/&gt;
+&lt;var&gt;
+   &lt;var-name&gt;maxlength&lt;/var-name&gt;
+   &lt;var-value&gt;1&lt;/var-value&gt;
+&lt;/var&gt;</module-data>
+</module-data>
+</module>
+<module name="entity">
+<module-data name="name">UsuarioNoticias</module-data>
+<module-data name="description">UsuarioNoticias</module-data>
+<module-data name="root-package">com.spirit.seguridad.entity</module-data>
+<module-data name="table-name">USUARIO_NOTICIAS</module-data>
+<module-data name="primary-key">id</module-data>
+<module-data name="primary-key-type">java.lang.Long</module-data>
+<module-data name="is-composite">false</module-data>
+<ref-name>UsuarioNoticias</ref-name>
+<module-data name="field">
+<module-data name="name">id</module-data>
+<module-data name="type">java.lang.Long</module-data>
+<module-data name="column-name">ID</module-data>
+<module-data name="required">true</module-data>
+<module-data name="sql-type">NUMBER(10)</module-data>
+<module-data name="jdbc-type">BIGINT</module-data>
+<module-data name="primary-key">true</module-data>
+<module-data name="auto-primary-key">true</module-data>
+<module-data name="foreign-key">false</module-data>
+<module-data name="validation-depends">float, maxlength</module-data>
+<module-data name="validation-xml">&lt;arg1 key="${var:maxlength}" name="maxlength" resource="false"/&gt;
+&lt;var&gt;
+   &lt;var-name&gt;maxlength&lt;/var-name&gt;
+   &lt;var-value&gt;10&lt;/var-value&gt;
+&lt;/var&gt;</module-data>
+</module-data>
+<module-data name="field">
+<module-data name="name">usuarioId</module-data>
+<module-data name="type">java.lang.Long</module-data>
+<module-data name="column-name">USUARIO_ID</module-data>
+<module-data name="required">true</module-data>
+<module-data name="sql-type">NUMBER(10)</module-data>
+<module-data name="jdbc-type">BIGINT</module-data>
+<module-data name="primary-key">false</module-data>
+<module-data name="auto-primary-key">false</module-data>
+<module-data name="foreign-key">false</module-data>
+<module-data name="validation-depends">required, float, maxlength</module-data>
+<module-data name="validation-xml">&lt;arg1 key="${var:maxlength}" name="maxlength" resource="false"/&gt;
+&lt;var&gt;
+   &lt;var-name&gt;maxlength&lt;/var-name&gt;
+   &lt;var-value&gt;10&lt;/var-value&gt;
+&lt;/var&gt;</module-data>
+</module-data>
+<module-data name="field">
+<module-data name="name">noticiasId</module-data>
+<module-data name="type">java.lang.Long</module-data>
+<module-data name="column-name">NOTICIAS_ID</module-data>
+<module-data name="required">true</module-data>
+<module-data name="sql-type">NUMBER(10)</module-data>
+<module-data name="jdbc-type">BIGINT</module-data>
+<module-data name="primary-key">false</module-data>
+<module-data name="auto-primary-key">false</module-data>
+<module-data name="foreign-key">false</module-data>
+<module-data name="validation-depends">required, float, maxlength</module-data>
+<module-data name="validation-xml">&lt;arg1 key="${var:maxlength}" name="maxlength" resource="false"/&gt;
+&lt;var&gt;
+   &lt;var-name&gt;maxlength&lt;/var-name&gt;
+   &lt;var-value&gt;10&lt;/var-value&gt;
+&lt;/var&gt;</module-data>
+</module-data>
+</module>
+<module name="entity">
+<module-data name="name">Funcion</module-data>
+<module-data name="description">Funcion</module-data>
+<module-data name="root-package">com.spirit.seguridad.entity</module-data>
+<module-data name="table-name">FUNCION</module-data>
+<module-data name="primary-key">id</module-data>
+<module-data name="primary-key-type">java.lang.Long</module-data>
+<module-data name="is-composite">false</module-data>
+<ref-name>Funcion</ref-name>
+<module-data name="field">
+<module-data name="name">id</module-data>
+<module-data name="type">java.lang.Long</module-data>
+<module-data name="column-name">ID</module-data>
+<module-data name="required">true</module-data>
+<module-data name="sql-type">NUMBER(10)</module-data>
+<module-data name="jdbc-type">BIGINT</module-data>
+<module-data name="primary-key">true</module-data>
+<module-data name="auto-primary-key">true</module-data>
+<module-data name="foreign-key">false</module-data>
+<module-data name="validation-depends">float, maxlength</module-data>
+<module-data name="validation-xml">&lt;arg1 key="${var:maxlength}" name="maxlength" resource="false"/&gt;
+&lt;var&gt;
+   &lt;var-name&gt;maxlength&lt;/var-name&gt;
+   &lt;var-value&gt;10&lt;/var-value&gt;
+&lt;/var&gt;</module-data>
+</module-data>
+<module-data name="field">
+<module-data name="name">codigo</module-data>
+<module-data name="type">java.lang.String</module-data>
+<module-data name="column-name">CODIGO</module-data>
+<module-data name="required">false</module-data>
+<module-data name="sql-type">VARCHAR2(3)</module-data>
+<module-data name="jdbc-type">VARCHAR</module-data>
+<module-data name="primary-key">false</module-data>
+<module-data name="auto-primary-key">false</module-data>
+<module-data name="foreign-key">false</module-data>
+<module-data name="validation-depends">maxlength</module-data>
+<module-data name="validation-xml">&lt;arg1 key="${var:maxlength}" name="maxlength" resource="false"/&gt;
+&lt;var&gt;
+   &lt;var-name&gt;maxlength&lt;/var-name&gt;
+   &lt;var-value&gt;3&lt;/var-value&gt;
+&lt;/var&gt;</module-data>
+</module-data>
+<module-data name="field">
+<module-data name="name">nombre</module-data>
+<module-data name="type">java.lang.String</module-data>
+<module-data name="column-name">NOMBRE</module-data>
+<module-data name="required">false</module-data>
+<module-data name="sql-type">VARCHAR2(30)</module-data>
+<module-data name="jdbc-type">VARCHAR</module-data>
+<module-data name="primary-key">false</module-data>
+<module-data name="auto-primary-key">false</module-data>
+<module-data name="foreign-key">false</module-data>
+<module-data name="validation-depends">maxlength</module-data>
+<module-data name="validation-xml">&lt;arg1 key="${var:maxlength}" name="maxlength" resource="false"/&gt;
+&lt;var&gt;
+   &lt;var-name&gt;maxlength&lt;/var-name&gt;
+   &lt;var-value&gt;30&lt;/var-value&gt;
+&lt;/var&gt;</module-data>
+</module-data>
+<module-data name="field">
+<module-data name="name">icon</module-data>
+<module-data name="type">java.lang.String</module-data>
+<module-data name="column-name">ICON</module-data>
+<module-data name="required">false</module-data>
+<module-data name="sql-type">VARCHAR2(50)</module-data>
+<module-data name="jdbc-type">VARCHAR</module-data>
+<module-data name="primary-key">false</module-data>
+<module-data name="auto-primary-key">false</module-data>
+<module-data name="foreign-key">false</module-data>
+<module-data name="validation-depends">maxlength</module-data>
+<module-data name="validation-xml">&lt;arg1 key="${var:maxlength}" name="maxlength" resource="false"/&gt;
+&lt;var&gt;
+   &lt;var-name&gt;maxlength&lt;/var-name&gt;
+   &lt;var-value&gt;50&lt;/var-value&gt;
+&lt;/var&gt;</module-data>
+</module-data>
+</module>
+<module name="session">
+<module-data name="name">FuncionSession</module-data>
+<module-data name="description">FuncionSession</module-data>
+<module-data name="root-package">com.spirit.seguridad.session</module-data>
+<ref-name>FuncionSession</ref-name>
+<ref>Funcion</ref>
+</module>
+<module name="entity">
+<module-data name="name">RolOpcion</module-data>
+<module-data name="description">RolOpcion</module-data>
+<module-data name="root-package">com.spirit.seguridad.entity</module-data>
+<module-data name="table-name">ROL_OPCION</module-data>
+<module-data name="primary-key">id</module-data>
+<module-data name="primary-key-type">java.lang.Long</module-data>
+<module-data name="is-composite">false</module-data>
+<ref-name>RolOpcion</ref-name>
+<module-data name="field">
+<module-data name="name">id</module-data>
+<module-data name="type">java.lang.Long</module-data>
+<module-data name="column-name">ID</module-data>
+<module-data name="required">true</module-data>
+<module-data name="sql-type">NUMBER(10)</module-data>
+<module-data name="jdbc-type">BIGINT</module-data>
+<module-data name="primary-key">true</module-data>
+<module-data name="auto-primary-key">true</module-data>
+<module-data name="foreign-key">false</module-data>
+<module-data name="validation-depends">float, maxlength</module-data>
+<module-data name="validation-xml">&lt;arg1 key="${var:maxlength}" name="maxlength" resource="false"/&gt;
+&lt;var&gt;
+   &lt;var-name&gt;maxlength&lt;/var-name&gt;
+   &lt;var-value&gt;10&lt;/var-value&gt;
+&lt;/var&gt;</module-data>
+</module-data>
+<module-data name="field">
+<module-data name="name">rolId</module-data>
+<module-data name="type">java.lang.Long</module-data>
+<module-data name="column-name">ROL_ID</module-data>
+<module-data name="required">false</module-data>
+<module-data name="sql-type">NUMBER(10)</module-data>
+<module-data name="jdbc-type">BIGINT</module-data>
+<module-data name="primary-key">false</module-data>
+<module-data name="auto-primary-key">false</module-data>
+<module-data name="foreign-key">false</module-data>
+<module-data name="validation-depends">float, maxlength</module-data>
+<module-data name="validation-xml">&lt;arg1 key="${var:maxlength}" name="maxlength" resource="false"/&gt;
+&lt;var&gt;
+   &lt;var-name&gt;maxlength&lt;/var-name&gt;
+   &lt;var-value&gt;10&lt;/var-value&gt;
+&lt;/var&gt;</module-data>
+</module-data>
+<module-data name="field">
+<module-data name="name">menuId</module-data>
+<module-data name="type">java.lang.Long</module-data>
+<module-data name="column-name">MENU_ID</module-data>
+<module-data name="required">false</module-data>
+<module-data name="sql-type">NUMBER(10)</module-data>
+<module-data name="jdbc-type">BIGINT</module-data>
+<module-data name="primary-key">false</module-data>
+<module-data name="auto-primary-key">false</module-data>
+<module-data name="foreign-key">false</module-data>
+<module-data name="validation-depends">float, maxlength</module-data>
+<module-data name="validation-xml">&lt;arg1 key="${var:maxlength}" name="maxlength" resource="false"/&gt;
+&lt;var&gt;
+   &lt;var-name&gt;maxlength&lt;/var-name&gt;
+   &lt;var-value&gt;10&lt;/var-value&gt;
+&lt;/var&gt;</module-data>
+</module-data>
+<module-data name="field">
+<module-data name="name">ninguno</module-data>
+<module-data name="type">java.lang.String</module-data>
+<module-data name="column-name">NINGUNO</module-data>
+<module-data name="required">false</module-data>
+<module-data name="sql-type">VARCHAR2(1)</module-data>
+<module-data name="jdbc-type">VARCHAR</module-data>
+<module-data name="primary-key">false</module-data>
+<module-data name="auto-primary-key">false</module-data>
+<module-data name="foreign-key">false</module-data>
+<module-data name="validation-depends">maxlength</module-data>
+<module-data name="validation-xml">&lt;arg1 key="${var:maxlength}" name="maxlength" resource="false"/&gt;
+&lt;var&gt;
+   &lt;var-name&gt;maxlength&lt;/var-name&gt;
+   &lt;var-value&gt;1&lt;/var-value&gt;
+&lt;/var&gt;</module-data>
+</module-data>
+<module-data name="field">
+<module-data name="name">grabarActualizar</module-data>
+<module-data name="type">java.lang.String</module-data>
+<module-data name="column-name">GRABAR_ACTUALIZAR</module-data>
+<module-data name="required">false</module-data>
+<module-data name="sql-type">VARCHAR2(1)</module-data>
+<module-data name="jdbc-type">VARCHAR</module-data>
+<module-data name="primary-key">false</module-data>
+<module-data name="auto-primary-key">false</module-data>
+<module-data name="foreign-key">false</module-data>
+<module-data name="validation-depends">maxlength</module-data>
+<module-data name="validation-xml">&lt;arg1 key="${var:maxlength}" name="maxlength" resource="false"/&gt;
+&lt;var&gt;
+   &lt;var-name&gt;maxlength&lt;/var-name&gt;
+   &lt;var-value&gt;1&lt;/var-value&gt;
+&lt;/var&gt;</module-data>
+</module-data>
+<module-data name="field">
+<module-data name="name">borrar</module-data>
+<module-data name="type">java.lang.String</module-data>
+<module-data name="column-name">BORRAR</module-data>
+<module-data name="required">false</module-data>
+<module-data name="sql-type">VARCHAR2(1)</module-data>
+<module-data name="jdbc-type">VARCHAR</module-data>
+<module-data name="primary-key">false</module-data>
+<module-data name="auto-primary-key">false</module-data>
+<module-data name="foreign-key">false</module-data>
+<module-data name="validation-depends">maxlength</module-data>
+<module-data name="validation-xml">&lt;arg1 key="${var:maxlength}" name="maxlength" resource="false"/&gt;
+&lt;var&gt;
+   &lt;var-name&gt;maxlength&lt;/var-name&gt;
+   &lt;var-value&gt;1&lt;/var-value&gt;
+&lt;/var&gt;</module-data>
+</module-data>
+<module-data name="field">
+<module-data name="name">consultar</module-data>
+<module-data name="type">java.lang.String</module-data>
+<module-data name="column-name">CONSULTAR</module-data>
+<module-data name="required">false</module-data>
+<module-data name="sql-type">VARCHAR2(1)</module-data>
+<module-data name="jdbc-type">VARCHAR</module-data>
+<module-data name="primary-key">false</module-data>
+<module-data name="auto-primary-key">false</module-data>
+<module-data name="foreign-key">false</module-data>
+<module-data name="validation-depends">maxlength</module-data>
+<module-data name="validation-xml">&lt;arg1 key="${var:maxlength}" name="maxlength" resource="false"/&gt;
+&lt;var&gt;
+   &lt;var-name&gt;maxlength&lt;/var-name&gt;
+   &lt;var-value&gt;1&lt;/var-value&gt;
+&lt;/var&gt;</module-data>
+</module-data>
+<module-data name="field">
+<module-data name="name">autorizar</module-data>
+<module-data name="type">java.lang.String</module-data>
+<module-data name="column-name">AUTORIZAR</module-data>
+<module-data name="required">false</module-data>
+<module-data name="sql-type">VARCHAR2(1)</module-data>
+<module-data name="jdbc-type">VARCHAR</module-data>
+<module-data name="primary-key">false</module-data>
+<module-data name="auto-primary-key">false</module-data>
+<module-data name="foreign-key">false</module-data>
+<module-data name="validation-depends">maxlength</module-data>
+<module-data name="validation-xml">&lt;arg1 key="${var:maxlength}" name="maxlength" resource="false"/&gt;
+&lt;var&gt;
+   &lt;var-name&gt;maxlength&lt;/var-name&gt;
+   &lt;var-value&gt;1&lt;/var-value&gt;
+&lt;/var&gt;</module-data>
+</module-data>
+<module-data name="field">
+<module-data name="name">imprimir</module-data>
+<module-data name="type">java.lang.String</module-data>
+<module-data name="column-name">IMPRIMIR</module-data>
+<module-data name="required">false</module-data>
+<module-data name="sql-type">VARCHAR2(1)</module-data>
+<module-data name="jdbc-type">VARCHAR</module-data>
+<module-data name="primary-key">false</module-data>
+<module-data name="auto-primary-key">false</module-data>
+<module-data name="foreign-key">false</module-data>
+<module-data name="validation-depends">maxlength</module-data>
+<module-data name="validation-xml">&lt;arg1 key="${var:maxlength}" name="maxlength" resource="false"/&gt;
+&lt;var&gt;
+   &lt;var-name&gt;maxlength&lt;/var-name&gt;
+   &lt;var-value&gt;1&lt;/var-value&gt;
+&lt;/var&gt;</module-data>
+</module-data>
+<module-data name="field">
+<module-data name="name">generarGrafico</module-data>
+<module-data name="type">java.lang.String</module-data>
+<module-data name="column-name">GENERAR_GRAFICO</module-data>
+<module-data name="required">false</module-data>
+<module-data name="sql-type">VARCHAR2(1)</module-data>
+<module-data name="jdbc-type">VARCHAR</module-data>
+<module-data name="primary-key">false</module-data>
+<module-data name="auto-primary-key">false</module-data>
+<module-data name="foreign-key">false</module-data>
+<module-data name="validation-depends">maxlength</module-data>
+<module-data name="validation-xml">&lt;arg1 key="${var:maxlength}" name="maxlength" resource="false"/&gt;
+&lt;var&gt;
+   &lt;var-name&gt;maxlength&lt;/var-name&gt;
+   &lt;var-value&gt;1&lt;/var-value&gt;
+&lt;/var&gt;</module-data>
+</module-data>
+<module-data name="field">
+<module-data name="name">duplicar</module-data>
+<module-data name="type">java.lang.String</module-data>
+<module-data name="column-name">DUPLICAR</module-data>
+<module-data name="required">false</module-data>
+<module-data name="sql-type">VARCHAR2(1)</module-data>
+<module-data name="jdbc-type">VARCHAR</module-data>
+<module-data name="primary-key">false</module-data>
+<module-data name="auto-primary-key">false</module-data>
+<module-data name="foreign-key">false</module-data>
+<module-data name="validation-depends">maxlength</module-data>
+<module-data name="validation-xml">&lt;arg1 key="${var:maxlength}" name="maxlength" resource="false"/&gt;
+&lt;var&gt;
+   &lt;var-name&gt;maxlength&lt;/var-name&gt;
+   &lt;var-value&gt;1&lt;/var-value&gt;
+&lt;/var&gt;</module-data>
+</module-data>
+</module>
+<module name="entity">
+<module-data name="name">Usuario</module-data>
+<module-data name="description">Usuario</module-data>
+<module-data name="root-package">com.spirit.general.entity</module-data>
+<module-data name="table-name">USUARIO</module-data>
+<module-data name="primary-key">id</module-data>
+<module-data name="primary-key-type">java.lang.Long</module-data>
+<module-data name="is-composite">false</module-data>
+<ref-name>Usuario</ref-name>
+<module-data name="field">
+<module-data name="name">id</module-data>
+<module-data name="type">java.lang.Long</module-data>
+<module-data name="column-name">ID</module-data>
+<module-data name="required">true</module-data>
+<module-data name="sql-type">NUMBER(10)</module-data>
+<module-data name="jdbc-type">BIGINT</module-data>
+<module-data name="primary-key">true</module-data>
+<module-data name="auto-primary-key">true</module-data>
+<module-data name="foreign-key">false</module-data>
+<module-data name="validation-depends">float, maxlength</module-data>
+<module-data name="validation-xml">&lt;arg1 key="${var:maxlength}" name="maxlength" resource="false"/&gt;
+&lt;var&gt;
+   &lt;var-name&gt;maxlength&lt;/var-name&gt;
+   &lt;var-value&gt;10&lt;/var-value&gt;
+&lt;/var&gt;</module-data>
+</module-data>
+<module-data name="field">
+<module-data name="name">usuario</module-data>
+<module-data name="type">java.lang.String</module-data>
+<module-data name="column-name">USUARIO</module-data>
+<module-data name="required">false</module-data>
+<module-data name="sql-type">VARCHAR2(10)</module-data>
+<module-data name="jdbc-type">VARCHAR</module-data>
+<module-data name="primary-key">false</module-data>
+<module-data name="auto-primary-key">false</module-data>
+<module-data name="foreign-key">false</module-data>
+<module-data name="validation-depends">maxlength</module-data>
+<module-data name="validation-xml">&lt;arg1 key="${var:maxlength}" name="maxlength" resource="false"/&gt;
+&lt;var&gt;
+   &lt;var-name&gt;maxlength&lt;/var-name&gt;
+   &lt;var-value&gt;10&lt;/var-value&gt;
+&lt;/var&gt;</module-data>
+</module-data>
+<module-data name="field">
+<module-data name="name">clave</module-data>
+<module-data name="type">java.lang.String</module-data>
+<module-data name="column-name">CLAVE</module-data>
+<module-data name="required">false</module-data>
+<module-data name="sql-type">VARCHAR2(200)</module-data>
+<module-data name="jdbc-type">VARCHAR</module-data>
+<module-data name="primary-key">false</module-data>
+<module-data name="auto-primary-key">false</module-data>
+<module-data name="foreign-key">false</module-data>
+<module-data name="validation-depends">maxlength</module-data>
+<module-data name="validation-xml">&lt;arg1 key="${var:maxlength}" name="maxlength" resource="false"/&gt;
+&lt;var&gt;
+   &lt;var-name&gt;maxlength&lt;/var-name&gt;
+   &lt;var-value&gt;200&lt;/var-value&gt;
+&lt;/var&gt;</module-data>
+</module-data>
+<module-data name="field">
+<module-data name="name">tipousuario</module-data>
+<module-data name="type">java.lang.String</module-data>
+<module-data name="column-name">TIPOUSUARIO</module-data>
+<module-data name="required">false</module-data>
+<module-data name="sql-type">VARCHAR2(5)</module-data>
+<module-data name="jdbc-type">VARCHAR</module-data>
+<module-data name="primary-key">false</module-data>
+<module-data name="auto-primary-key">false</module-data>
+<module-data name="foreign-key">false</module-data>
+<module-data name="validation-depends">maxlength</module-data>
+<module-data name="validation-xml">&lt;arg1 key="${var:maxlength}" name="maxlength" resource="false"/&gt;
+&lt;var&gt;
+   &lt;var-name&gt;maxlength&lt;/var-name&gt;
+   &lt;var-value&gt;5&lt;/var-value&gt;
+&lt;/var&gt;</module-data>
+</module-data>
+<module-data name="field">
+<module-data name="name">empleadoId</module-data>
+<module-data name="type">java.lang.Long</module-data>
+<module-data name="column-name">EMPLEADO_ID</module-data>
+<module-data name="required">false</module-data>
+<module-data name="sql-type">NUMBER(10)</module-data>
+<module-data name="jdbc-type">BIGINT</module-data>
+<module-data name="primary-key">false</module-data>
+<module-data name="auto-primary-key">false</module-data>
+<module-data name="foreign-key">false</module-data>
+<module-data name="validation-depends">float, maxlength</module-data>
+<module-data name="validation-xml">&lt;arg1 key="${var:maxlength}" name="maxlength" resource="false"/&gt;
+&lt;var&gt;
+   &lt;var-name&gt;maxlength&lt;/var-name&gt;
+   &lt;var-value&gt;10&lt;/var-value&gt;
+&lt;/var&gt;</module-data>
+</module-data>
+<module-data name="field">
+<module-data name="name">empresaId</module-data>
+<module-data name="type">java.lang.Long</module-data>
+<module-data name="column-name">EMPRESA_ID</module-data>
+<module-data name="required">false</module-data>
+<module-data name="sql-type">NUMBER(10)</module-data>
+<module-data name="jdbc-type">BIGINT</module-data>
+<module-data name="primary-key">false</module-data>
+<module-data name="auto-primary-key">false</module-data>
+<module-data name="foreign-key">false</module-data>
+<module-data name="validation-depends">float, maxlength</module-data>
+<module-data name="validation-xml">&lt;arg1 key="${var:maxlength}" name="maxlength" resource="false"/&gt;
+&lt;var&gt;
+   &lt;var-name&gt;maxlength&lt;/var-name&gt;
+   &lt;var-value&gt;10&lt;/var-value&gt;
+&lt;/var&gt;</module-data>
+</module-data>
+<module-data name="field">
+<module-data name="name">tipousuarioTimetracker</module-data>
+<module-data name="type">java.lang.String</module-data>
+<module-data name="column-name">TIPOUSUARIO_TIMETRACKER</module-data>
+<module-data name="required">false</module-data>
+<module-data name="sql-type">VARCHAR2(1)</module-data>
+<module-data name="jdbc-type">VARCHAR</module-data>
+<module-data name="primary-key">false</module-data>
+<module-data name="auto-primary-key">false</module-data>
+<module-data name="foreign-key">false</module-data>
+<module-data name="validation-depends">maxlength</module-data>
+<module-data name="validation-xml">&lt;arg1 key="${var:maxlength}" name="maxlength" resource="false"/&gt;
+&lt;var&gt;
+   &lt;var-name&gt;maxlength&lt;/var-name&gt;
+   &lt;var-value&gt;1&lt;/var-value&gt;
+&lt;/var&gt;</module-data>
+</module-data>
+</module>
+<module name="session">
+<module-data name="name">UsuarioSession</module-data>
+<module-data name="description">UsuarioSession</module-data>
+<module-data name="root-package">com.spirit.general.session</module-data>
+<ref-name>UsuarioSession</ref-name>
+<ref>Usuario</ref>
+</module>
+</skelet>

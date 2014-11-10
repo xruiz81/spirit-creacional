@@ -1,0 +1,97 @@
+<?xml version="1.0"?>
+<project>
+	<parent>
+		<artifactId>spirit</artifactId>
+		<groupId>biz.versality</groupId>
+		<version>2.3.243</version>
+	</parent>
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>biz.versality</groupId>
+	<artifactId>spirit-client</artifactId>
+	<packaging>war</packaging>
+	<name>Spirit Client</name>
+	<version>${project.parent.version}</version>
+	<properties>
+		<version.link>main</version.link>
+		<version.link2>timetracker</version.link2>
+	</properties>
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.codehaus.mojo.webstart</groupId>
+				<artifactId>webstart-maven-plugin</artifactId>
+				<executions>
+					<execution>
+						<phase>process-resources</phase>
+						<goals>
+							<goal>jnlp-download-servlet</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<jnlpFiles>
+						<jnlpFile>
+							<templateFilename>
+								/jnlp-versality-template.vm
+							</templateFilename>
+							<outputFilename>spirit.jnlp</outputFilename>
+							<jarResources>
+								<jarResource>
+									<groupId>
+										${project.parent.groupId}
+									</groupId>
+									<artifactId>
+										${version.link}
+									</artifactId>
+									<version>
+										${project.version}
+									</version>
+									<mainClass>
+										com.spirit.general.gui.main.Spirit
+									</mainClass>
+								</jarResource>
+							</jarResources>
+						</jnlpFile>
+						<jnlpFile>
+							<templateFilename>
+								/jnlp-timetracker-template.vm
+							</templateFilename>
+							<outputFilename>timetracker.jnlp</outputFilename>
+							<jarResources>
+								<jarResource>
+									<groupId>
+										${project.parent.groupId}
+									</groupId>
+									<artifactId>
+										${version.link2}
+									</artifactId>
+									<version>
+										${project.version}
+									</version>
+									<mainClass>
+										com.spirit.timeTracker.gui.model.TimeTracker
+									</mainClass>
+								</jarResource>
+							</jarResources>
+						</jnlpFile>
+					</jnlpFiles>
+					<sign>
+						<keystore>./keyStore.key</keystore>
+						<keypass>versality</keypass>
+						<storepass>versality</storepass>
+						<alias>versality</alias>
+						<!--KEYSTORE MANAGEMENT -->
+						<keystoreConfig>
+							<delete>true</delete><!--delete the keystore at build time -->
+							<gen>false</gen><!--generate keystore and key at build time -->
+						</keystoreConfig>
+						<verify>false</verify><!--verify the signature after signing -->
+					</sign>
+					<unsign>true</unsign><!--unsign already signed packages and sign them with own key -->
+					<verifyjar>false</verifyjar>
+				</configuration>
+			</plugin>
+		</plugins>
+		<finalName>spirit-client</finalName>
+	</build>
+</project>

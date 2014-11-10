@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<process-diagram name="principalCompras" width="619" height="503">
+  <node name="Inicio" x="149" y="8" width="140" height="40">
+    <transition name="">
+      <label x="5" y="-10"/>
+    </transition>
+  </node>
+  <node name="Autorizar SolicitudCompra" x="128" y="63" width="181" height="40">
+    <transition name="Aceptado">
+      <label x="5" y="-10"/>
+    </transition>
+    <transition name="Negado">
+      <label x="-107" y="-206"/>
+      <bendpoint w1="237" h1="-2" w2="232" h2="-401"/>
+      <bendpoint w1="236" h1="185" w2="231" h2="-214"/>
+      <bendpoint w1="234" h1="345" w2="229" h2="-54"/>
+    </transition>
+  </node>
+  <node name="Crear OrdenCompra" x="149" y="150" width="140" height="40">
+    <transition name="">
+      <label x="5" y="-10"/>
+    </transition>
+  </node>
+  <node name="Crear Compra" x="153" y="314" width="140" height="40">
+    <transition name="">
+      <label x="5" y="-10"/>
+    </transition>
+  </node>
+  <node name="Fin" x="153" y="462" width="140" height="40"/>
+  <node name="Autorizar OrdenCompra" x="136" y="210" width="164" height="40">
+    <transition name="Negado">
+      <label x="-81" y="-106"/>
+      <bendpoint w1="205" h1="-2" w2="200" h2="-254"/>
+      <bendpoint w1="205" h1="89" w2="200" h2="-163"/>
+      <bendpoint w1="203" h1="198" w2="198" h2="-54"/>
+    </transition>
+    <transition name="Aceptado">
+      <label x="5" y="-10"/>
+    </transition>
+    <transition name="Regresar Autorizar SolicitudCompra">
+      <label x="-51" y="-41"/>
+      <bendpoint w1="-157" h1="-20" w2="-157" h2="127"/>
+      <bendpoint w1="-158" h1="-70" w2="-158" h2="77"/>
+      <bendpoint w1="-158" h1="-146" w2="-158" h2="1"/>
+    </transition>
+  </node>
+  <node name="Autorizar Compra" x="152" y="373" width="140" height="40">
+    <transition name="Aceptado">
+      <label x="5" y="-10"/>
+    </transition>
+    <transition name="Negado">
+      <label x="-71" y="-40"/>
+      <bendpoint w1="167" h1="-3" w2="167" h2="-101"/>
+      <bendpoint w1="167" h1="38" w2="167" h2="-60"/>
+    </transition>
+    <transition name="Regresar Autorizar OrdenCompra">
+      <label x="-22" y="-55"/>
+      <bendpoint w1="-162" h1="1" w2="-158" h2="164"/>
+      <bendpoint w1="-161" h1="-156" w2="-157" h2="7"/>
+    </transition>
+  </node>
+</process-diagram>

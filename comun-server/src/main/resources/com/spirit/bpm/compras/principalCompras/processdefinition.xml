@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<process-definition
+  xmlns=""  name="principalCompras">
+   <start-state name="Inicio">
+      <transition name="" to="Autorizar SolicitudCompra"> 
+         <action name="action1" class="com.spirit.bpm.compras.handlers.actions.InicializarCompraIdealActionHandler">
+            <autorizadorOrdenCompra>80</autorizadorOrdenCompra>
+            <autorizadorSolicitudCompra>80</autorizadorSolicitudCompra>
+            <autorizadorCompra>80</autorizadorCompra>
+         </action>
+      </transition>
+   </start-state>
+   <task-node name="Autorizar SolicitudCompra">
+      <task name="Autorizar Solicitud de Compra">
+         <assignment class="com.spirit.bpm.compras.handlers.assignments.AutorizarCompraAssignmentHandler"></assignment>
+      </task>
+      <transition name="Aceptado" to="Crear OrdenCompra"></transition>
+      <transition name="Negado" to="Fin"></transition>
+   </task-node>
+   <task-node name="Crear OrdenCompra">
+      <task name="Crear Orden de Compra"></task>
+      <transition name="" to="Autorizar OrdenCompra"></transition>
+   </task-node>
+   <task-node name="Crear Compra">
+      <task name="Crear Compra"></task>
+      <transition name="" to="Autorizar Compra"></transition>
+   </task-node>
+   <end-state name="Fin"></end-state>
+   <task-node name="Autorizar OrdenCompra">
+      <task name="Autorizar Orden de Compra"></task>
+      <transition name="Negado" to="Fin"></transition>
+      <transition name="Aceptado" to="Crear Compra"></transition>
+      <transition name="Regresar Autorizar SolicitudCompra" to="Autorizar SolicitudCompra"></transition>
+   </task-node>
+   <task-node name="Autorizar Compra">
+      <task name="Autorizar Compra"></task>
+      <transition name="Aceptado" to="Fin"></transition>
+      <transition name="Negado" to="Fin"></transition>
+      <transition name="Regresar Autorizar OrdenCompra" to="Autorizar OrdenCompra"></transition>
+   </task-node>
+   
+</process-definition>

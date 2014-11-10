@@ -1,0 +1,448 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="RPFactura" pageWidth="595" pageHeight="842" columnWidth="535" leftMargin="30" rightMargin="30" topMargin="20" bottomMargin="20">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="17"/>
+	<property name="ireport.scriptlethandling" value="0"/>
+	<property name="ireport.encoding" value="ISO-8859-1"/>
+	<import value="net.sf.jasperreports.engine.*"/>
+	<import value="java.util.*"/>
+	<import value="net.sf.jasperreports.engine.data.*"/>
+	<parameter name="razonSocialEmpresa" class="java.lang.String" isForPrompting="false">
+		<parameterDescription><![CDATA[razonSocialEmpresa]]></parameterDescription>
+	</parameter>
+	<parameter name="nombreOficina" class="java.lang.String" isForPrompting="false">
+		<parameterDescription><![CDATA[nombreOficina]]></parameterDescription>
+	</parameter>
+	<parameter name="direccionOficina" class="java.lang.String" isForPrompting="false">
+		<parameterDescription><![CDATA[direccionOficina]]></parameterDescription>
+	</parameter>
+	<parameter name="telefonoOficina" class="java.lang.String" isForPrompting="false">
+		<parameterDescription><![CDATA[telefonoOficina]]></parameterDescription>
+	</parameter>
+	<parameter name="rucEmpresa" class="java.lang.String" isForPrompting="false">
+		<parameterDescription><![CDATA[rucEmpresa]]></parameterDescription>
+	</parameter>
+	<parameter name="razonSocialCliente" class="java.lang.String" isForPrompting="false">
+		<parameterDescription><![CDATA[razonSocialCliente]]></parameterDescription>
+	</parameter>
+	<parameter name="fechaCreacion" class="java.lang.String" isForPrompting="false">
+		<parameterDescription><![CDATA[fechaCreacion]]></parameterDescription>
+	</parameter>
+	<parameter name="pathsubreport" class="java.lang.String" isForPrompting="false">
+		<parameterDescription><![CDATA[pathsubreport]]></parameterDescription>
+	</parameter>
+	<parameter name="dataSourceDetail" class="net.sf.jasperreports.engine.JRDataSource" isForPrompting="false">
+		<parameterDescription><![CDATA[dataSourceDetail]]></parameterDescription>
+	</parameter>
+	<parameter name="descuentoTotal" class="java.lang.Double" isForPrompting="false">
+		<parameterDescription><![CDATA[descuentoTotal]]></parameterDescription>
+	</parameter>
+	<parameter name="ivaTotal" class="java.lang.Double" isForPrompting="false">
+		<parameterDescription><![CDATA[ivaTotal]]></parameterDescription>
+	</parameter>
+	<parameter name="otroImpuestoTotal" class="java.math.BigDecimal" isForPrompting="false">
+		<parameterDescription><![CDATA[otroImpuestoTotal]]></parameterDescription>
+	</parameter>
+	<parameter name="grandTotal" class="java.lang.Double" isForPrompting="false">
+		<parameterDescription><![CDATA[grandTotal]]></parameterDescription>
+	</parameter>
+	<parameter name="valorTotal" class="java.lang.Double" isForPrompting="false">
+		<parameterDescription><![CDATA[valorTotal]]></parameterDescription>
+	</parameter>
+	<parameter name="numeroFactura" class="java.lang.String" isForPrompting="false">
+		<parameterDescription><![CDATA[numeroFactura]]></parameterDescription>
+	</parameter>
+	<parameter name="proveedoresMap" class="java.util.Map" isForPrompting="false">
+		<parameterDescription><![CDATA[proveedoresMap]]></parameterDescription>
+	</parameter>
+	<parameter name="porcentajeComision" class="java.math.BigDecimal" isForPrompting="false">
+		<parameterDescription><![CDATA[porcentajeComision]]></parameterDescription>
+	</parameter>
+	<parameter name="valorComision" class="java.lang.Double" isForPrompting="false">
+		<parameterDescription><![CDATA[valorComision]]></parameterDescription>
+	</parameter>
+	<parameter name="reembolso" class="java.lang.String" isForPrompting="false">
+		<parameterDescription><![CDATA[reembolso]]></parameterDescription>
+	</parameter>
+	<parameter name="mostrarIVA" class="java.lang.String" isForPrompting="false">
+		<parameterDescription><![CDATA[mostrarIVA]]></parameterDescription>
+	</parameter>
+	<parameter name="cantidadEnLetras" class="java.lang.String" isForPrompting="false">
+		<parameterDescription><![CDATA[cantidadEnLetras]]></parameterDescription>
+	</parameter>
+	<parameter name="porcentajeIVA" class="java.lang.String" isForPrompting="false">
+		<parameterDescription><![CDATA[porcentajeIVA]]></parameterDescription>
+	</parameter>
+	<parameter name="reembolsoGasto" class="java.lang.String" isForPrompting="false">
+		<parameterDescription><![CDATA[reembolsoGasto]]></parameterDescription>
+	</parameter>
+	<parameter name="cantidadEnLetras2" class="java.lang.String" isForPrompting="false">
+		<parameterDescription><![CDATA[cantidadEnLetras2]]></parameterDescription>
+	</parameter>
+	<parameter name="comision" class="java.lang.String" isForPrompting="false">
+		<parameterDescription><![CDATA[comision]]></parameterDescription>
+	</parameter>
+	<field name="fechaCreacion" class="java.lang.String">
+		<fieldDescription><![CDATA[fechaCreacion]]></fieldDescription>
+	</field>
+	<field name="identificacion" class="java.lang.String">
+		<fieldDescription><![CDATA[identificacion]]></fieldDescription>
+	</field>
+	<field name="direccion" class="java.lang.String">
+		<fieldDescription><![CDATA[direccion]]></fieldDescription>
+	</field>
+	<field name="telefono" class="java.lang.String">
+		<fieldDescription><![CDATA[telefono]]></fieldDescription>
+	</field>
+	<group name="FacturaDetalle" isStartNewPage="true">
+		<groupExpression><![CDATA[$V{REPORT_COUNT}]]></groupExpression>
+		<groupHeader>
+			<band height="20" splitType="Stretch">
+				<subreport isUsingCache="true">
+					<reportElement key="RPFacturaDetalle" x="1" y="0" width="534" height="20"/>
+					<subreportParameter name="proveedoresMap">
+						<subreportParameterExpression><![CDATA[$P{proveedoresMap}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="mostrarIVA">
+						<subreportParameterExpression><![CDATA[$P{mostrarIVA}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="reembolso">
+						<subreportParameterExpression><![CDATA[$P{reembolso}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="comision">
+						<subreportParameterExpression><![CDATA[$P{comision}]]></subreportParameterExpression>
+					</subreportParameter>
+					<dataSourceExpression><![CDATA[$P{dataSourceDetail}]]></dataSourceExpression>
+					<subreportExpression><![CDATA[$P{pathsubreport}]]></subreportExpression>
+				</subreport>
+			</band>
+		</groupHeader>
+		<groupFooter>
+			<band splitType="Stretch"/>
+		</groupFooter>
+	</group>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="250" splitType="Stretch">
+			<textField isStretchWithOverflow="true" isBlankWhenNull="false">
+				<reportElement key="fechaCreacion" x="89" y="165" width="170" height="14"/>
+				<box rightPadding="3">
+					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Tahoma" size="8" isBold="false" pdfFontName="Helvetica"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{fechaCreacion}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="false">
+				<reportElement key="razonSocialCliente" x="89" y="139" width="421" height="23"/>
+				<box rightPadding="3">
+					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Tahoma" size="7" isBold="true" pdfFontName="Helvetica-Bold"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{razonSocialCliente}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="false">
+				<reportElement key="identificacion" x="89" y="184" width="185" height="14"/>
+				<box rightPadding="3">
+					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Tahoma" size="8" isBold="false" pdfFontName="Helvetica"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{identificacion}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="false">
+				<reportElement key="direccion" x="101" y="206" width="319" height="18"/>
+				<box rightPadding="3">
+					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Left" verticalAlignment="Top">
+					<font fontName="Tahoma" size="7" isBold="false" pdfFontName="Helvetica"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{direccion}]]></textFieldExpression>
+			</textField>
+			<textField pattern="" isBlankWhenNull="false">
+				<reportElement key="telefono" x="420" y="206" width="90" height="18"/>
+				<box>
+					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Top">
+					<font fontName="Tahoma" size="8" isBold="false" pdfFontName="Helvetica"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{telefono}]]></textFieldExpression>
+			</textField>
+		</band>
+	</title>
+	<pageHeader>
+		<band splitType="Stretch"/>
+	</pageHeader>
+	<columnHeader>
+		<band height="10" splitType="Stretch">
+			<textField isStretchWithOverflow="true" isBlankWhenNull="false">
+				<reportElement key="identificacion-1" x="74" y="0" width="185" height="10"/>
+				<box rightPadding="3">
+					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Tahoma" size="6" isBold="false" pdfFontName="Helvetica"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{reembolsoGasto}]]></textFieldExpression>
+			</textField>
+		</band>
+	</columnHeader>
+	<detail>
+		<band splitType="Stretch"/>
+	</detail>
+	<columnFooter>
+		<band splitType="Stretch"/>
+	</columnFooter>
+	<pageFooter>
+		<band splitType="Stretch"/>
+	</pageFooter>
+	<lastPageFooter>
+		<band height="250" splitType="Stretch">
+			<textField pattern="#,##0.00" isBlankWhenNull="false">
+				<reportElement key="descuento" x="420" y="68" width="90" height="14">
+					<printWhenExpression><![CDATA[new Boolean(($P{descuentoTotal}).doubleValue() > 0)]]></printWhenExpression>
+				</reportElement>
+				<box>
+					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Tahoma" size="7" isBold="false" pdfFontName="Helvetica"/>
+				</textElement>
+				<textFieldExpression><![CDATA[Double.valueOf((($P{descuentoTotal}).doubleValue() * -1D))]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00" isBlankWhenNull="false">
+				<reportElement key="iva" x="420" y="110" width="90" height="14">
+					<printWhenExpression><![CDATA[new Boolean(($P{ivaTotal}).doubleValue() > 0)]]></printWhenExpression>
+				</reportElement>
+				<box>
+					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Tahoma" size="7" isBold="false" pdfFontName="Helvetica"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{ivaTotal}]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00" isBlankWhenNull="false">
+				<reportElement key="valor" x="420" y="137" width="90" height="14"/>
+				<box>
+					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Tahoma" size="7" isBold="false" pdfFontName="Helvetica"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{grandTotal}]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00" isBlankWhenNull="false">
+				<reportElement key="textField-1" x="420" y="32" width="90" height="14"/>
+				<box>
+					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Tahoma" size="7" isBold="false" pdfFontName="Helvetica"/>
+				</textElement>
+				<textFieldExpression><![CDATA[new Double(($P{valorTotal}).doubleValue()+($P{valorComision}).doubleValue())]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement key="staticText-16" x="65" y="69" width="25" height="10"/>
+				<box rightPadding="3">
+					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement>
+					<font fontName="Tahoma" size="6" isBold="true" pdfFontName="Helvetica-Bold"/>
+				</textElement>
+				<text><![CDATA[NOTA:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement key="staticText-17" x="100" y="69" width="205" height="10">
+					<printWhenExpression><![CDATA[new Boolean($P{reembolso}.equals("S"))]]></printWhenExpression>
+				</reportElement>
+				<box rightPadding="3">
+					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement>
+					<font fontName="Tahoma" size="6"/>
+				</textElement>
+				<text><![CDATA[ESTA FACTURA NO ESTA SUJETA A RETENCIONES DEL IVA E]]></text>
+			</staticText>
+			<staticText>
+				<reportElement key="staticText-18" x="65" y="79" width="240" height="10">
+					<printWhenExpression><![CDATA[new Boolean($P{reembolso}.equals("S"))]]></printWhenExpression>
+				</reportElement>
+				<box rightPadding="3">
+					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement>
+					<font fontName="Tahoma" size="6"/>
+				</textElement>
+				<text><![CDATA[IMPUESTO A LA RENTA POR SER REEMBOLSO DE GASTO]]></text>
+			</staticText>
+			<staticText>
+				<reportElement key="staticText-19" x="100" y="69" width="205" height="10">
+					<printWhenExpression><![CDATA[new Boolean($P{reembolso}.equals("N"))]]></printWhenExpression>
+				</reportElement>
+				<box rightPadding="3">
+					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement>
+					<font fontName="Tahoma" size="6"/>
+				</textElement>
+				<text><![CDATA[POR FAVOR ENVIAR LAS RETENCIONES POR FAX O]]></text>
+			</staticText>
+			<staticText>
+				<reportElement key="staticText-20" x="65" y="79" width="240" height="10">
+					<printWhenExpression><![CDATA[new Boolean($P{reembolso}.equals("N"))]]></printWhenExpression>
+				</reportElement>
+				<box rightPadding="3">
+					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement>
+					<font fontName="Tahoma" size="6"/>
+				</textElement>
+				<text><![CDATA[LAS ORIGINALES DENTRO DE LOS CINCO DIAS SUBSIGUIENTES ESTABLECIDOS]]></text>
+			</staticText>
+			<staticText>
+				<reportElement key="staticText-21" x="65" y="89" width="240" height="10">
+					<printWhenExpression><![CDATA[new Boolean($P{reembolso}.equals("N"))]]></printWhenExpression>
+				</reportElement>
+				<box rightPadding="3">
+					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement>
+					<font fontName="Tahoma" size="6"/>
+				</textElement>
+				<text><![CDATA[POR LA LEY TRIBUTARIA. CASO CONTRARIO LA FACTURA SERA CANCELADA]]></text>
+			</staticText>
+			<staticText>
+				<reportElement key="staticText-22" x="65" y="99" width="240" height="10">
+					<printWhenExpression><![CDATA[new Boolean($P{reembolso}.equals("N"))]]></printWhenExpression>
+				</reportElement>
+				<box rightPadding="3">
+					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement>
+					<font fontName="Tahoma" size="6"/>
+				</textElement>
+				<text><![CDATA[EN SU TOTALIDAD.]]></text>
+			</staticText>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="false">
+				<reportElement key="textField-5" x="79" y="38" width="290" height="14"/>
+				<box rightPadding="3">
+					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement>
+					<font fontName="Tahoma" size="7" isBold="true" pdfFontName="Helvetica-Bold"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{cantidadEnLetras} + "\n          " + $P{cantidadEnLetras2}]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00" isBlankWhenNull="false">
+				<reportElement key="textField-6" x="420" y="90" width="90" height="14"/>
+				<box>
+					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Tahoma" size="7" isUnderline="false"/>
+				</textElement>
+				<textFieldExpression><![CDATA[new Double(($P{valorTotal}).doubleValue()-($P{descuentoTotal}).doubleValue()+($P{valorComision}).doubleValue())]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00" isBlankWhenNull="false">
+				<reportElement key="textField-4" x="420" y="7" width="90" height="14">
+					<printWhenExpression><![CDATA[new Boolean(($P{valorComision}).doubleValue() > 0)]]></printWhenExpression>
+				</reportElement>
+				<box>
+					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Tahoma" size="7" isUnderline="false"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{valorComision}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement key="staticText-15" mode="Transparent" x="293" y="7" width="117" height="14">
+					<printWhenExpression><![CDATA[new Boolean(($P{valorComision}).doubleValue() > 0)]]></printWhenExpression>
+				</reportElement>
+				<box>
+					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Tahoma" size="7" isBold="false" pdfFontName="Helvetica"/>
+				</textElement>
+				<text><![CDATA[(+) 15% COMISION AGENCIA:]]></text>
+			</staticText>
+		</band>
+	</lastPageFooter>
+	<summary>
+		<band splitType="Stretch"/>
+	</summary>
+</jasperReport>

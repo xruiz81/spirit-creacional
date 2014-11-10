@@ -1,0 +1,361 @@
+<?xml version="1.0" encoding="ISO-8859-1"  ?>
+<!-- Created with iReport - A designer for JasperReports -->
+<!DOCTYPE jasperReport PUBLIC "//JasperReports//DTD Report Design//EN" "http://jasperreports.sourceforge.net/dtds/jasperreport.dtd">
+<jasperReport
+		 name="RPFactura"
+		 columnCount="1"
+		 printOrder="Vertical"
+		 orientation="Portrait"
+		 pageWidth="566"
+		 pageHeight="595"
+		 columnWidth="550"
+		 columnSpacing="0"
+		 leftMargin="14"
+		 rightMargin="2"
+		 topMargin="14"
+		 bottomMargin="14"
+		 whenNoDataType="NoPages"
+		 isTitleNewPage="false"
+		 isSummaryNewPage="false">
+	<property name="ireport.scriptlethandling" value="0" />
+	<property name="ireport.encoding" value="ISO-8859-1" />
+	<import value="java.util.*" />
+	<import value="net.sf.jasperreports.engine.*" />
+	<import value="net.sf.jasperreports.engine.data.*" />
+
+	<parameter name="razonSocialEmpresa" isForPrompting="false" class="java.lang.String">
+		<parameterDescription><![CDATA[razonSocialEmpresa]]></parameterDescription>
+	</parameter>
+	<parameter name="nombreOficina" isForPrompting="false" class="java.lang.String">
+		<parameterDescription><![CDATA[nombreOficina]]></parameterDescription>
+	</parameter>
+	<parameter name="direccionOficina" isForPrompting="false" class="java.lang.String">
+		<parameterDescription><![CDATA[direccionOficina]]></parameterDescription>
+	</parameter>
+	<parameter name="telefonoOficina" isForPrompting="false" class="java.lang.String">
+		<parameterDescription><![CDATA[telefonoOficina]]></parameterDescription>
+	</parameter>
+	<parameter name="rucEmpresa" isForPrompting="false" class="java.lang.String">
+		<parameterDescription><![CDATA[rucEmpresa]]></parameterDescription>
+	</parameter>
+	<parameter name="razonSocialCliente" isForPrompting="false" class="java.lang.String">
+		<parameterDescription><![CDATA[razonSocialCliente]]></parameterDescription>
+	</parameter>
+	<parameter name="fechaCreacion" isForPrompting="false" class="java.lang.String">
+		<parameterDescription><![CDATA[fechaCreacion]]></parameterDescription>
+	</parameter>
+	<parameter name="pathsubreport" isForPrompting="false" class="java.lang.String">
+		<parameterDescription><![CDATA[pathsubreport]]></parameterDescription>
+	</parameter>
+	<parameter name="dataSourceDetail" isForPrompting="false" class="net.sf.jasperreports.engine.JRDataSource">
+		<parameterDescription><![CDATA[dataSourceDetail]]></parameterDescription>
+	</parameter>
+	<parameter name="descuentoTotal" isForPrompting="false" class="java.lang.Double">
+		<parameterDescription><![CDATA[descuentoTotal]]></parameterDescription>
+	</parameter>
+	<parameter name="ivaTotal" isForPrompting="false" class="java.lang.Double">
+		<parameterDescription><![CDATA[ivaTotal]]></parameterDescription>
+	</parameter>
+	<parameter name="otroImpuestoTotal" isForPrompting="false" class="java.math.BigDecimal">
+		<parameterDescription><![CDATA[otroImpuestoTotal]]></parameterDescription>
+	</parameter>
+	<parameter name="grandTotal" isForPrompting="false" class="java.lang.Double">
+		<parameterDescription><![CDATA[grandTotal]]></parameterDescription>
+	</parameter>
+	<parameter name="valorTotal" isForPrompting="false" class="java.lang.Double">
+		<parameterDescription><![CDATA[valorTotal]]></parameterDescription>
+	</parameter>
+	<parameter name="numeroFactura" isForPrompting="false" class="java.lang.String">
+		<parameterDescription><![CDATA[numeroFactura]]></parameterDescription>
+	</parameter>
+	<parameter name="proveedoresMap" isForPrompting="false" class="java.util.Map">
+		<parameterDescription><![CDATA[proveedoresMap]]></parameterDescription>
+	</parameter>
+	<parameter name="porcentajeComision" isForPrompting="false" class="java.math.BigDecimal">
+		<parameterDescription><![CDATA[porcentajeComision]]></parameterDescription>
+	</parameter>
+	<parameter name="reembolso" isForPrompting="false" class="java.lang.String">
+		<parameterDescription><![CDATA[reembolso]]></parameterDescription>
+	</parameter>
+	<parameter name="mostrarIVA" isForPrompting="false" class="java.lang.String">
+		<parameterDescription><![CDATA[mostrarIVA]]></parameterDescription>
+	</parameter>
+	<parameter name="cantidadEnLetras" isForPrompting="false" class="java.lang.String">
+		<parameterDescription><![CDATA[cantidadEnLetras]]></parameterDescription>
+	</parameter>
+	<parameter name="porcentajeIVA" isForPrompting="false" class="java.lang.String">
+		<parameterDescription><![CDATA[porcentajeIVA]]></parameterDescription>
+	</parameter>
+	<parameter name="reembolsoGasto" isForPrompting="false" class="java.lang.String">
+		<parameterDescription><![CDATA[reembolsoGasto]]></parameterDescription>
+	</parameter>
+	<parameter name="productosMap" isForPrompting="false" class="java.util.Map">
+		<parameterDescription><![CDATA[productosMap]]></parameterDescription>
+	</parameter>
+	<parameter name="valorComision" isForPrompting="false" class="java.lang.Double">
+		<parameterDescription><![CDATA[valorComision]]></parameterDescription>
+	</parameter>
+	<parameter name="detallePagos" isForPrompting="false" class="java.lang.String">
+		<parameterDescription><![CDATA[detallePagos]]></parameterDescription>
+	</parameter>
+
+	<field name="numero" class="java.math.BigDecimal">
+		<fieldDescription><![CDATA[numero]]></fieldDescription>
+	</field>
+	<field name="fechaCreacion" class="java.lang.String">
+		<fieldDescription><![CDATA[fechaCreacion]]></fieldDescription>
+	</field>
+	<field name="identificacion" class="java.lang.String">
+		<fieldDescription><![CDATA[identificacion]]></fieldDescription>
+	</field>
+	<field name="direccion" class="java.lang.String">
+		<fieldDescription><![CDATA[direccion]]></fieldDescription>
+	</field>
+	<field name="telefono" class="java.lang.String">
+		<fieldDescription><![CDATA[telefono]]></fieldDescription>
+	</field>
+
+
+		<group  name="FacturaDetalle" isStartNewPage="true" >
+			<groupExpression><![CDATA[$V{REPORT_COUNT}]]></groupExpression>
+			<groupHeader>
+			<band height="20"  isSplitAllowed="true" >
+				<subreport  isUsingCache="true">
+					<reportElement
+						x="36"
+						y="0"
+						width="491"
+						height="20"
+						key="RPFacturaDetalle"/>
+					<subreportParameter  name="proveedoresMap">
+						<subreportParameterExpression><![CDATA[$P{proveedoresMap}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter  name="mostrarIVA">
+						<subreportParameterExpression><![CDATA[$P{mostrarIVA}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter  name="reembolso">
+						<subreportParameterExpression><![CDATA[$P{reembolso}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter  name="productosMap">
+						<subreportParameterExpression><![CDATA[$P{productosMap}]]></subreportParameterExpression>
+					</subreportParameter>
+					<dataSourceExpression><![CDATA[$P{dataSourceDetail}]]></dataSourceExpression>
+					<subreportExpression  class="java.lang.String"><![CDATA[$P{pathsubreport}]]></subreportExpression>
+				</subreport>
+			</band>
+			</groupHeader>
+			<groupFooter>
+			<band height="0"  isSplitAllowed="true" >
+			</band>
+			</groupFooter>
+		</group>
+		<background>
+			<band height="0"  isSplitAllowed="true" >
+			</band>
+		</background>
+		<title>
+			<band height="150"  isSplitAllowed="true" >
+				<textField isStretchWithOverflow="true" isBlankWhenNull="false" evaluationTime="Now" hyperlinkType="None"  hyperlinkTarget="Self" >
+					<reportElement
+						x="47"
+						y="59"
+						width="170"
+						height="14"
+						key="fechaCreacion"/>
+					<box topBorder="None" topBorderColor="#000000" leftBorder="None" leftBorderColor="#000000" rightBorder="None" rightBorderColor="#000000" rightPadding="3" bottomBorder="None" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Left" verticalAlignment="Middle">
+						<font fontName="Tahoma" pdfFontName="Helvetica" size="7" isBold="false"/>
+					</textElement>
+				<textFieldExpression   class="java.lang.String"><![CDATA[$P{fechaCreacion}]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="false" evaluationTime="Now" hyperlinkType="None"  hyperlinkTarget="Self" >
+					<reportElement
+						x="58"
+						y="73"
+						width="190"
+						height="23"
+						key="razonSocialCliente"/>
+					<box topBorder="None" topBorderColor="#000000" leftBorder="None" leftBorderColor="#000000" rightBorder="None" rightBorderColor="#000000" rightPadding="3" bottomBorder="None" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Left" verticalAlignment="Middle">
+						<font fontName="Tahoma" pdfFontName="Helvetica-Bold" size="7" isBold="true"/>
+					</textElement>
+				<textFieldExpression   class="java.lang.String"><![CDATA[$P{razonSocialCliente}]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="false" evaluationTime="Now" hyperlinkType="None"  hyperlinkTarget="Self" >
+					<reportElement
+						x="280"
+						y="59"
+						width="138"
+						height="14"
+						key="identificacion"/>
+					<box topBorder="None" topBorderColor="#000000" leftBorder="None" leftBorderColor="#000000" rightBorder="None" rightBorderColor="#000000" rightPadding="3" bottomBorder="None" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Left" verticalAlignment="Middle">
+						<font fontName="Tahoma" pdfFontName="Helvetica" size="8" isBold="false"/>
+					</textElement>
+				<textFieldExpression   class="java.lang.String"><![CDATA[$F{identificacion}]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true" evaluationTime="Now" hyperlinkType="None"  hyperlinkTarget="Self" >
+					<reportElement
+						x="65"
+						y="96"
+						width="197"
+						height="23"
+						key="direccion"/>
+					<box topBorder="None" topBorderColor="#000000" leftBorder="None" leftBorderColor="#000000" rightBorder="None" rightBorderColor="#000000" rightPadding="3" bottomBorder="None" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Left" verticalAlignment="Top">
+						<font fontName="Tahoma" pdfFontName="Helvetica" size="7" isBold="false"/>
+					</textElement>
+				<textFieldExpression   class="java.lang.String"><![CDATA[$F{direccion}]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="false" evaluationTime="Now" hyperlinkType="None"  hyperlinkTarget="Self" >
+					<reportElement
+						x="255"
+						y="78"
+						width="185"
+						height="14"
+						key="identificacion-1"/>
+					<box topBorder="None" topBorderColor="#000000" leftBorder="None" leftBorderColor="#000000" rightBorder="None" rightBorderColor="#000000" rightPadding="3" bottomBorder="None" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Left" verticalAlignment="Middle">
+						<font fontName="Tahoma" pdfFontName="Helvetica" size="8" isBold="false"/>
+					</textElement>
+				<textFieldExpression   class="java.lang.String"><![CDATA[$P{reembolsoGasto}]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true" evaluationTime="Now" hyperlinkType="None"  hyperlinkTarget="Self" >
+					<reportElement
+						x="425"
+						y="96"
+						width="65"
+						height="14"
+						key="identificacion-2"/>
+					<box topBorder="None" topBorderColor="#000000" leftBorder="None" leftBorderColor="#000000" rightBorder="None" rightBorderColor="#000000" rightPadding="3" bottomBorder="None" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Left" verticalAlignment="Middle">
+						<font fontName="Tahoma" pdfFontName="Helvetica" size="8" isBold="false"/>
+					</textElement>
+				<textFieldExpression   class="java.lang.String"><![CDATA[$F{telefono}]]></textFieldExpression>
+				</textField>
+			</band>
+		</title>
+		<pageHeader>
+			<band height="0"  isSplitAllowed="true" >
+			</band>
+		</pageHeader>
+		<columnHeader>
+			<band height="0"  isSplitAllowed="true" >
+			</band>
+		</columnHeader>
+		<detail>
+			<band height="0"  isSplitAllowed="true" >
+			</band>
+		</detail>
+		<columnFooter>
+			<band height="0"  isSplitAllowed="true" >
+			</band>
+		</columnFooter>
+		<pageFooter>
+			<band height="0"  isSplitAllowed="true" >
+			</band>
+		</pageFooter>
+		<lastPageFooter>
+			<band height="160"  isSplitAllowed="true" >
+				<textField isStretchWithOverflow="false" pattern="#,##0.00" isBlankWhenNull="false" evaluationTime="Now" hyperlinkType="None"  hyperlinkTarget="Self" >
+					<reportElement
+						x="437"
+						y="14"
+						width="90"
+						height="11"
+						key="descuento">
+							<printWhenExpression><![CDATA[new Boolean(($P{descuentoTotal}).doubleValue() > 0)]]></printWhenExpression>
+						</reportElement>
+					<box topBorder="None" topBorderColor="#000000" leftBorder="None" leftBorderColor="#000000" rightBorder="None" rightBorderColor="#000000" bottomBorder="None" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font fontName="Tahoma" pdfFontName="Helvetica" size="8" isBold="false"/>
+					</textElement>
+				<textFieldExpression   class="java.lang.Double"><![CDATA[new Double((($P{descuentoTotal}).doubleValue() * -1D))]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="false" pattern="#,##0.00" isBlankWhenNull="false" evaluationTime="Now" hyperlinkType="None"  hyperlinkTarget="Self" >
+					<reportElement
+						x="437"
+						y="40"
+						width="90"
+						height="11"
+						key="iva">
+							<printWhenExpression><![CDATA[new Boolean(($P{ivaTotal}).doubleValue() > 0)]]></printWhenExpression>
+						</reportElement>
+					<box topBorder="None" topBorderColor="#000000" leftBorder="None" leftBorderColor="#000000" rightBorder="None" rightBorderColor="#000000" bottomBorder="None" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font fontName="Tahoma" pdfFontName="Helvetica" size="8" isBold="false"/>
+					</textElement>
+				<textFieldExpression   class="java.lang.Double"><![CDATA[$P{ivaTotal}]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="false" pattern="#,##0.00" isBlankWhenNull="false" evaluationTime="Now" hyperlinkType="None"  hyperlinkTarget="Self" >
+					<reportElement
+						x="437"
+						y="51"
+						width="90"
+						height="11"
+						key="valor"/>
+					<box topBorder="None" topBorderColor="#000000" leftBorder="None" leftBorderColor="#000000" rightBorder="None" rightBorderColor="#000000" bottomBorder="None" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font fontName="Tahoma" pdfFontName="Helvetica" size="8" isBold="false"/>
+					</textElement>
+				<textFieldExpression   class="java.lang.Double"><![CDATA[$P{grandTotal}]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="false" pattern="#,##0.00" isBlankWhenNull="false" evaluationTime="Now" hyperlinkType="None"  hyperlinkTarget="Self" >
+					<reportElement
+						x="437"
+						y="2"
+						width="90"
+						height="11"
+						key="textField-1"/>
+					<box topBorder="None" topBorderColor="#000000" leftBorder="None" leftBorderColor="#000000" rightBorder="None" rightBorderColor="#000000" bottomBorder="None" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font fontName="Tahoma" pdfFontName="Helvetica" size="8" isBold="false"/>
+					</textElement>
+				<textFieldExpression   class="java.lang.Double"><![CDATA[$P{valorTotal}]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="false" evaluationTime="Now" hyperlinkType="None"  hyperlinkTarget="Self" >
+					<reportElement
+						x="41"
+						y="14"
+						width="270"
+						height="14"
+						key="textField-5"/>
+					<box topBorder="None" topBorderColor="#000000" leftBorder="None" leftBorderColor="#000000" rightBorder="None" rightBorderColor="#000000" rightPadding="3" bottomBorder="None" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Left">
+						<font fontName="Tahoma" pdfFontName="Helvetica-Bold" size="7" isBold="true"/>
+					</textElement>
+				<textFieldExpression   class="java.lang.String"><![CDATA["PAGOS: " + $P{detallePagos}]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="false" pattern="#,##0.00" isBlankWhenNull="false" evaluationTime="Now" hyperlinkType="None"  hyperlinkTarget="Self" >
+					<reportElement
+						x="437"
+						y="27"
+						width="90"
+						height="11"
+						key="textField-6"/>
+					<box topBorder="None" topBorderColor="#000000" leftBorder="None" leftBorderColor="#000000" rightBorder="None" rightBorderColor="#000000" bottomBorder="None" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font fontName="Tahoma" size="8" isUnderline="false"/>
+					</textElement>
+				<textFieldExpression   class="java.lang.Double"><![CDATA[new Double(($P{valorTotal}).doubleValue()-($P{descuentoTotal}).doubleValue())]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="false" evaluationTime="Now" hyperlinkType="None"  hyperlinkTarget="Self" >
+					<reportElement
+						x="42"
+						y="49"
+						width="270"
+						height="14"
+						key="textField-7"/>
+					<box topBorder="None" topBorderColor="#000000" leftBorder="None" leftBorderColor="#000000" rightBorder="None" rightBorderColor="#000000" rightPadding="3" bottomBorder="None" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Left">
+						<font fontName="Tahoma" pdfFontName="Helvetica-Bold" size="7" isBold="true"/>
+					</textElement>
+				<textFieldExpression   class="java.lang.String"><![CDATA["SON: " + $P{cantidadEnLetras}]]></textFieldExpression>
+				</textField>
+			</band>
+		</lastPageFooter>
+		<summary>
+			<band height="0"  isSplitAllowed="true" >
+			</band>
+		</summary>
+</jasperReport>

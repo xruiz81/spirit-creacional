@@ -1,0 +1,31 @@
+<project
+    xmlns = "http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi = "http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation = "http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <parent>
+        <groupId>biz.versality</groupId>
+        <artifactId>spirit</artifactId>
+        <version>2.3.243</version>
+    </parent>
+    <name>nomina-client</name>
+    <groupId>${project.parent.groupId}</groupId>
+    <artifactId>${project.name}</artifactId>
+    <version>${project.parent.version}</version>
+    <modelVersion>4.0.0</modelVersion>
+    <packaging>jar</packaging>
+    <dependencies>
+        <dependency>
+            <groupId>${project.parent.groupId}</groupId>
+            <artifactId>base</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>${project.parent.groupId}</groupId>
+            <artifactId>general-client</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>${project.parent.groupId}</groupId>
+            <artifactId>middleware</artifactId>
+            <type>ejb</type>
+        </dependency>
+    </dependencies>
+</project>
